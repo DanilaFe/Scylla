@@ -3,6 +3,12 @@ import Dict exposing (Dict)
 import Json.Decode as Decode exposing (Decoder, int, string, float, list, value, dict, bool)
 import Json.Decode.Pipeline exposing (required, optional)
 
+decodeJust : Decoder a -> Decoder (Maybe a)
+decodeJust = Decode.map Just
+
+maybeDecode : String -> Decoder a -> Decoder (Maybe a -> b) -> Decoder b
+maybeDecode s d = optional s (decodeJust d) Nothing
+
 -- General Events
 type alias Event =
     { content : Decode.Value
@@ -16,47 +22,47 @@ eventDecoder =
         |> required "type" string
 
 type alias EventContent =
-    { avatarUrl : String
-    , displayname : String
+    { avatarUrl : Maybe String
+    , displayname : Maybe String
     , membership : String
-    , isDirect : Bool
+    , isDirect : Maybe Bool
     -- , thirdPartyInvite : Invite
-    , unsigned : UnsignedData
+    , unsigned : Maybe UnsignedData
     }
 
 eventContentDecoder : Decoder EventContent
 eventContentDecoder =
     Decode.succeed EventContent
-        |> required "avatar_url" string
-        |> required "displayname" string
+        |> maybeDecode "avatar_url" string
+        |> maybeDecode "displayname" string
         |> required "membership" string
-        |> required "is_direct" bool
+        |> maybeDecode "is_direct" bool
         -- |> required "third_party_invite" inviteDecoder
-        |> required "unsigned" unsignedDataDecoder
-
-type alias State =
-    { events : List StateEvent
-    }
+        |> maybeDecode "unsigned" unsignedDataDecoder
 
 -- Unsigned Data
 type alias UnsignedData =
-    { age : Int
-    , redactedBecause : Event
-    , transactionId : String
+    { age : Maybe Int
+    , redactedBecause : Maybe Event
+    , transactionId : Maybe String
     }
 
 unsignedDataDecoder : Decoder UnsignedData
 unsignedDataDecoder =
     Decode.succeed UnsignedData
-        |> required "age" int
-        |> required "redacted_because" eventDecoder
-        |> required "transaction_id" string
+        |> maybeDecode "age" int
+        |> maybeDecode "redacted_because" eventDecoder
+        |> maybeDecode "transaction_id" string
 
 -- State
+type alias State =
+    { events : Maybe (List StateEvent)
+    }
+
 stateDecoder : Decoder State
 stateDecoder =
     Decode.succeed State
-        |> required "events" (list stateEventDecoder)
+        |> maybeDecode "events" (list stateEventDecoder)
 
 type alias StateEvent =
     { content : Decode.Value
@@ -64,8 +70,8 @@ type alias StateEvent =
     , eventId : String
     , sender : String
     , originServerTs : Int
-    , unsigned : UnsignedData
-    , prevContent : EventContent
+    , unsigned : Maybe UnsignedData
+    , prevContent : Maybe EventContent
     , stateKey : String
     }
 
@@ -77,54 +83,54 @@ stateEventDecoder =
         |> required "event_id" string
         |> required "sender" string
         |> required "origin_server_ts" int
-        |> required "unsigned" unsignedDataDecoder
-        |> required "prev_content" eventContentDecoder
+        |> maybeDecode "unsigned" unsignedDataDecoder
+        |> maybeDecode "prev_content" eventContentDecoder
         |> required "sate_key" string
 
 -- Rooms
 type alias Rooms =
-    { join : Dict String JoinedRoom
-    , invite : Dict String InvitedRoom
-    , leave : Dict String LeftRoom
+    { join : Maybe (Dict String JoinedRoom)
+    , invite : Maybe (Dict String InvitedRoom)
+    , leave : Maybe (Dict String LeftRoom)
     }
 
 roomsDecoder : Decoder Rooms
 roomsDecoder =
     Decode.succeed Rooms
-        |> required "join" (dict joinedRoomDecoder)
-        |> required "invite" (dict invitedRoomDecoder)
-        |> required "leave" (dict leftRoomDecoder)
+        |> maybeDecode "join" (dict joinedRoomDecoder)
+        |> maybeDecode "invite" (dict invitedRoomDecoder)
+        |> maybeDecode "leave" (dict leftRoomDecoder)
 
 type alias JoinedRoom =
-    { state : State
-    , timeline : Timeline
-    , ephemeral : Ephemeral
-    , accountData : AccountData
-    , unreadNotifications : UnreadNotificationCounts
+    { state : Maybe State
+    , timeline : Maybe Timeline
+    , ephemeral : Maybe Ephemeral
+    , accountData : Maybe AccountData
+    , unreadNotifications : Maybe UnreadNotificationCounts
     }
 
 joinedRoomDecoder : Decoder JoinedRoom
 joinedRoomDecoder =
     Decode.succeed JoinedRoom
-        |> required "state" stateDecoder
-        |> required "timeline" timelineDecoder
-        |> required "ephemeral" ephemeralDecoder
-        |> required "account_data" accountDataDecoder
-        |> required "unread_notifications" unreadNotificationCountsDecoder
+        |> maybeDecode "state" stateDecoder
+        |> maybeDecode "timeline" timelineDecoder
+        |> maybeDecode "ephemeral" ephemeralDecoder
+        |> maybeDecode "account_data" accountDataDecoder
+        |> maybeDecode "unread_notifications" unreadNotificationCountsDecoder
 
 
 --  Joined Room Data
 type alias Timeline =
-    { events : List RoomEvent
-    , limited : Bool
-    , prevBatch : String
+    { events : Maybe (List RoomEvent)
+    , limited : Maybe Bool
+    , prevBatch : Maybe String
     }
 
 timelineDecoder =
     Decode.succeed Timeline
-        |> required "events" (list roomEventDecoder)
-        |> required "limited" bool
-        |> required "prev_batch" string
+        |> maybeDecode "events" (list roomEventDecoder)
+        |> maybeDecode "limited" bool
+        |> maybeDecode "prev_batch" string
 
 type alias RoomEvent =
     { content : Decode.Value
@@ -132,7 +138,7 @@ type alias RoomEvent =
     , eventId : String
     , sender : String
     , originServerTs : Int
-    , unsigned : UnsignedData
+    , unsigned : Maybe UnsignedData
     }
 
 roomEventDecoder : Decoder RoomEvent
@@ -143,55 +149,55 @@ roomEventDecoder =
         |> required "event_id" string
         |> required "sender" string
         |> required "origin_server_ts" int
-        |> required "unsigned" unsignedDataDecoder
+        |> maybeDecode "unsigned" unsignedDataDecoder
 
 type alias Ephemeral =
-    { events : List Event
+    { events : Maybe (List Event)
     }
 
 ephemeralDecoder : Decoder Ephemeral
 ephemeralDecoder =
     Decode.succeed Ephemeral
-        |> required "events" (list eventDecoder)
+        |> maybeDecode "events" (list eventDecoder)
 
 type alias AccountData =
-    { events : List Event
+    { events : Maybe (List Event)
     }
 
 accountDataDecoder : Decoder AccountData
 accountDataDecoder =
     Decode.succeed AccountData
-        |> required "events" (list eventDecoder)
+        |> maybeDecode "events" (list eventDecoder)
 
 type alias UnreadNotificationCounts =
-    { highlightCount : Int
-    , notificationCount : Int
+    { highlightCount : Maybe Int
+    , notificationCount : Maybe Int
     }
 
 unreadNotificationCountsDecoder : Decoder UnreadNotificationCounts
 unreadNotificationCountsDecoder =
     Decode.succeed UnreadNotificationCounts
-        |> required "highlight_count" int
-        |> required "notification_count" int
+        |> maybeDecode "highlight_count" int
+        |> maybeDecode "notification_count" int
 
 --  Invited Room Data
 type alias InvitedRoom =
-    { inviteState : InviteState
+    { inviteState : Maybe InviteState
     }
 
 invitedRoomDecoder : Decoder InvitedRoom
 invitedRoomDecoder =
     Decode.succeed InvitedRoom
-        |> required "invite_state" inviteStateDecoder
+        |> maybeDecode "invite_state" inviteStateDecoder
 
 type alias InviteState =
-    { events : List StrippedState
+    { events : Maybe (List StrippedState)
     }
 
 inviteStateDecoder : Decoder InviteState
 inviteStateDecoder =
     Decode.succeed InviteState
-        |> required "events" (list strippedStateDecoder)
+        |> maybeDecode "events" (list strippedStateDecoder)
 
 type alias StrippedState =
     { content : EventContent
@@ -210,14 +216,14 @@ strippedStateDecoder =
 
 -- Left Room Data
 type alias LeftRoom =
-    { state : State
-    , timeline : Timeline
-    , accountData : AccountData
+    { state : Maybe State
+    , timeline : Maybe Timeline
+    , accountData : Maybe AccountData
     }
 
 leftRoomDecoder : Decoder LeftRoom
 leftRoomDecoder =
     Decode.succeed LeftRoom
-        |> required "state" stateDecoder
-        |> required "timeline" timelineDecoder
-        |> required "account_data" accountDataDecoder
+        |> maybeDecode "state" stateDecoder
+        |> maybeDecode "timeline" timelineDecoder
+        |> maybeDecode "account_data" accountDataDecoder
