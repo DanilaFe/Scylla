@@ -1,21 +1,14 @@
 import Browser exposing (application)
 import Browser.Navigation as Nav
+import Scylla.Sync exposing (..)
+import Scylla.Model exposing (..)
+import Scylla.Http exposing (..)
 import Url exposing (Url)
-import Html exposing (div)
+import Html exposing (div, text)
 
 type alias Flags =
     { token : Maybe String
     }
-
-type alias Model =
-    { key : Nav.Key
-    , token : Maybe String
-    }
-
-type Msg =
-    None
-    | TryUrl Browser.UrlRequest
-    | ChangeUrl Url
 
 init : Flags -> Url -> Nav.Key -> (Model, Cmd Msg)
 init flags url key =
@@ -23,6 +16,7 @@ init flags url key =
         model =
             { key = key
             , token = flags.token
+            , apiUrl = "https://matrix.org"
             }
         cmd = case flags.token of
             Just _ -> Cmd.none

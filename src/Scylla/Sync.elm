@@ -1,8 +1,10 @@
 module Scylla.Sync exposing (..)
+import Scylla.Api exposing (..)
 import Dict exposing (Dict)
 import Json.Decode as Decode exposing (Decoder, int, string, float, list, value, dict, bool)
 import Json.Decode.Pipeline exposing (required, optional)
 
+-- Special Decoding
 decodeJust : Decoder a -> Decoder (Maybe a)
 decodeJust = Decode.map Just
 
@@ -227,3 +229,28 @@ leftRoomDecoder =
         |> maybeDecode "state" stateDecoder
         |> maybeDecode "timeline" timelineDecoder
         |> maybeDecode "account_data" accountDataDecoder
+
+-- General Sync Response
+type alias SyncResponse =
+    { nextBatch : String
+    , rooms : Maybe Rooms
+    , presence : Maybe Presence
+    , accountData : Maybe AccountData
+    }
+
+syncResponseDecoder : Decoder SyncResponse
+syncResponseDecoder =
+    Decode.succeed SyncResponse
+        |> required "next_batch" string
+        |> maybeDecode "rooms" roomsDecoder
+        |> maybeDecode "presence" presenceDecoder
+        |> maybeDecode "account_data" accountDataDecoder
+
+type alias Presence =
+    { events : Maybe (List Event)
+    }
+
+presenceDecoder : Decoder Presence
+presenceDecoder =
+    Decode.succeed Presence
+        |> maybeDecode "events" (list eventDecoder)
