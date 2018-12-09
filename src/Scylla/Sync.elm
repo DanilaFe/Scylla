@@ -3,6 +3,7 @@ import Scylla.Api exposing (..)
 import Dict exposing (Dict)
 import Json.Decode as Decode exposing (Decoder, int, string, float, list, value, dict, bool, field)
 import Json.Decode.Pipeline exposing (required, optional)
+import Set exposing (Set)
 
 -- Special Decoding
 decodeJust : Decoder a -> Decoder (Maybe a)
@@ -256,8 +257,95 @@ presenceDecoder =
         |> maybeDecode "events" (list eventDecoder)
 
 -- Business Logic
+uniqueByRecursive : (a -> comparable) -> List a -> Set comparable -> List a
+uniqueByRecursive f l s = case l of
+    x::tail -> if Set.member (f x) s
+        then uniqueByRecursive f tail s
+        else x::uniqueByRecursive f tail (Set.insert (f x) s)
+    [] -> []
+
+uniqueBy : (a -> comparable) -> List a -> List a
+uniqueBy f l = uniqueByRecursive f l Set.empty
+
+mergeMaybe : (a -> a -> a) -> Maybe a -> Maybe a -> Maybe a
+mergeMaybe f l r = case (l, r) of
+    (Just v1, Just v2) -> Just <| f v1 v2
+    (Just v, Nothing) -> Just v
+    (Nothing, Just v) -> Just v
+    _ -> Nothing
+
+mergeEvents : List Event -> List Event -> List Event
+mergeEvents l1 l2 = l1 ++ l2
+
+mergeStateEvents : List StateEvent -> List StateEvent -> List StateEvent
+mergeStateEvents l1 l2 = l1 ++ l2
+
+mergeRoomEvents : List RoomEvent -> List RoomEvent -> List RoomEvent
+mergeRoomEvents l1 l2 = l1 ++ l2
+
+mergeStrippedStates : List StrippedState -> List StrippedState -> List StrippedState
+mergeStrippedStates l1 l2 = l1 ++ l2
+
+mergeAccountData : AccountData -> AccountData -> AccountData
+mergeAccountData a1 a2 = AccountData <| mergeMaybe mergeEvents a1.events a2.events
+
+mergePresence : Presence -> Presence -> Presence
+mergePresence p1 p2 = Presence <| mergeMaybe mergeEvents p1.events p2.events
+
+mergeDicts : (b -> b -> b) -> Dict comparable b -> Dict comparable b -> Dict comparable b
+mergeDicts f d1 d2 =
+    let
+        inOne = Dict.insert
+        inBoth k v1 v2 = Dict.insert k (f v1 v2)
+    in
+        Dict.merge inOne inBoth inOne d1 d2 (Dict.empty)
+
+mergeState : State -> State -> State
+mergeState s1 s2 = State <| mergeMaybe mergeStateEvents s1.events s2.events
+
+mergeTimeline : Timeline -> Timeline -> Timeline
+mergeTimeline t1 t2 = Timeline (mergeMaybe mergeRoomEvents t1.events t2.events) Nothing t2.prevBatch
+
+mergeJoinedRoom : JoinedRoom -> JoinedRoom -> JoinedRoom
+mergeJoinedRoom r1 r2 =
+    { r2 | state = mergeMaybe mergeState r1.state r2.state
+    , timeline = mergeMaybe mergeTimeline r1.timeline r2.timeline
+    , accountData = mergeMaybe mergeAccountData r1.accountData r2.accountData
+    }
+
+mergeInviteState : InviteState -> InviteState -> InviteState 
+mergeInviteState i1 i2 = InviteState <| mergeMaybe mergeStrippedStates i1.events i2.events
+
+mergeInvitedRoom : InvitedRoom -> InvitedRoom -> InvitedRoom
+mergeInvitedRoom i1 i2 = InvitedRoom <| mergeMaybe mergeInviteState i1.inviteState i2.inviteState
+
+mergeLeftRoom : LeftRoom -> LeftRoom -> LeftRoom
+mergeLeftRoom l1 l2 = LeftRoom
+    (mergeMaybe mergeState l1.state l2.state)
+    (mergeMaybe mergeTimeline l1.timeline l2.timeline)
+    (mergeMaybe mergeAccountData l1.accountData l2.accountData)
+
+mergeJoin : Dict String JoinedRoom -> Dict String JoinedRoom -> Dict String JoinedRoom
+mergeJoin = mergeDicts mergeJoinedRoom
+
+mergeInvite : Dict String InvitedRoom -> Dict String InvitedRoom -> Dict String InvitedRoom
+mergeInvite = mergeDicts mergeInvitedRoom
+
+mergeLeave : Dict String LeftRoom -> Dict String LeftRoom -> Dict String LeftRoom
+mergeLeave = mergeDicts mergeLeftRoom
+
+mergeRooms : Rooms -> Rooms -> Rooms
+mergeRooms r1 r2 =
+    { join = mergeMaybe mergeJoin r1.join r2.join
+    , invite = mergeMaybe mergeInvite r1.invite r2.invite
+    , leave = mergeMaybe mergeLeave r1.leave r2.leave
+    }
+
 mergeSyncResponse : SyncResponse -> SyncResponse -> SyncResponse
-mergeSyncResponse l r = r
+mergeSyncResponse l r =
+    { r | rooms = mergeMaybe mergeRooms l.rooms r.rooms
+    , accountData = mergeMaybe mergeAccountData l.accountData r.accountData
+    }
 
 roomName : JoinedRoom -> Maybe String
 roomName jr = 

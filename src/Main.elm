@@ -71,9 +71,13 @@ updateLoginResponse model r = case r of
     Err e  -> (model, Cmd.none)
 
 updateSyncResponse : Model -> Result Http.Error SyncResponse -> (Model, Cmd Msg)
-updateSyncResponse model r = let sync = model.sync in case r of
-    Ok sr -> ({ model | sync = mergeSyncResponse model.sync sr }, Cmd.none)
-    _ -> (model, Cmd.none)
+updateSyncResponse model r =
+    let
+        cmd = sync model.sync.nextBatch model.apiUrl <| Maybe.withDefault "" model.token
+    in
+        case r of
+            Ok sr -> ({ model | sync = mergeSyncResponse model.sync sr }, cmd)
+            _ -> (model, cmd)
 
 subscriptions : Model -> Sub Msg
 subscriptions m = Sub.none
