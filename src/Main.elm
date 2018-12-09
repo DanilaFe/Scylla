@@ -73,7 +73,10 @@ updateLoginResponse model r = case r of
 updateSyncResponse : Model -> Result Http.Error SyncResponse -> (Model, Cmd Msg)
 updateSyncResponse model r =
     let
-        cmd = sync model.sync.nextBatch model.apiUrl <| Maybe.withDefault "" model.token
+        token = Maybe.withDefault "" model.token
+        nextBatch = Result.withDefault model.sync.nextBatch
+            <| Result.map .nextBatch r
+        cmd = sync nextBatch model.apiUrl token
     in
         case r of
             Ok sr -> ({ model | sync = mergeSyncResponse model.sync sr }, cmd)
