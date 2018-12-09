@@ -80,14 +80,14 @@ type alias StateEvent =
 stateEventDecoder : Decoder StateEvent
 stateEventDecoder =
     Decode.succeed StateEvent
-        |> required "required" value
+        |> required "content" value
         |> required "type" string
         |> required "event_id" string
         |> required "sender" string
         |> required "origin_server_ts" int
         |> maybeDecode "unsigned" unsignedDataDecoder
         |> maybeDecode "prev_content" eventContentDecoder
-        |> required "sate_key" string
+        |> required "state_key" string
 
 -- Rooms
 type alias Rooms =
@@ -254,3 +254,7 @@ presenceDecoder : Decoder Presence
 presenceDecoder =
     Decode.succeed Presence
         |> maybeDecode "events" (list eventDecoder)
+
+-- Business Logic
+mergeSyncResponse : SyncResponse -> SyncResponse -> SyncResponse
+mergeSyncResponse l r = r

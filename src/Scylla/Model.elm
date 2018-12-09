@@ -1,8 +1,9 @@
 module Scylla.Model exposing (..)
 import Scylla.Api exposing (..)
-import Scylla.Sync exposing (SyncResponse)
+import Scylla.Sync exposing (SyncResponse, JoinedRoom)
 import Scylla.Login exposing (LoginResponse, Username, Password)
 import Browser.Navigation as Nav
+import Dict exposing (Dict)
 import Browser
 import Http
 import Url exposing (Url)
@@ -13,6 +14,8 @@ type alias Model =
     , loginUsername : Username
     , loginPassword : Password
     , apiUrl : ApiUrl
+    , sync : SyncResponse
+    , errors : List String
     }
 
 type Msg =

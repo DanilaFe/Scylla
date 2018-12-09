@@ -22,6 +22,13 @@ init flags url key =
             , loginUsername = ""
             , loginPassword = ""
             , apiUrl = "https://matrix.org"
+            , sync =
+                { nextBatch = ""
+                , rooms = Nothing
+                , presence = Nothing
+                , accountData = Nothing
+                }
+            , errors = []
             }
         cmd = case flags.token of
             Just _ -> Cmd.none
@@ -32,7 +39,7 @@ init flags url key =
 view : Model -> Browser.Document Msg
 view m =
     { title = "Scylla"
-    , body = [ viewFull m ]
+    , body = viewFull m
     }
 
 update : Msg -> Model -> (Model, Cmd Msg)
@@ -51,9 +58,9 @@ updateLoginResponse model r = case r of
     Err e  -> (model, Cmd.none)
 
 updateSyncResponse : Model -> Result Http.Error SyncResponse -> (Model, Cmd Msg)
-updateSyncResponse model r = case r of
-    Ok sr -> (model, Cmd.none)
-    Err e -> (model, Cmd.none)
+updateSyncResponse model r = let sync = model.sync in case r of
+    Ok sr -> ({ model | sync = mergeSyncResponse model.sync sr }, Cmd.none)
+    _ -> (model, Cmd.none)
 
 subscriptions : Model -> Sub Msg
 subscriptions m = Sub.none
