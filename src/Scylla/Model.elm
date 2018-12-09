@@ -2,6 +2,7 @@ module Scylla.Model exposing (..)
 import Scylla.Api exposing (..)
 import Scylla.Sync exposing (SyncResponse, JoinedRoom)
 import Scylla.Login exposing (LoginResponse, Username, Password)
+import Scylla.Route exposing (Route)
 import Browser.Navigation as Nav
 import Dict exposing (Dict)
 import Browser
@@ -10,6 +11,7 @@ import Url exposing (Url)
 
 type alias Model =
     { key : Nav.Key
+    , route : Route
     , token : Maybe ApiToken
     , loginUsername : Username
     , loginPassword : Password
@@ -24,7 +26,7 @@ type Msg =
     | ChangeLoginPassword Password -- During login screen: the password
     | AttemptLogin -- During login screen, login button presed
     | TryUrl Browser.UrlRequest -- User attempts to change URL
-    | ChangeUrl Url -- URL changes
+    | ChangeRoute Route -- URL changes
     | ReceiveSyncResponse (Result Http.Error SyncResponse) -- HTTP, Sync has finished
     | ReceiveLoginResponse (Result Http.Error LoginResponse) -- HTTP, Login has finished
 

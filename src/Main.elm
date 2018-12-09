@@ -5,7 +5,10 @@ import Scylla.Login exposing (..)
 import Scylla.Model exposing (..)
 import Scylla.Http exposing (..)
 import Scylla.Views exposing (viewFull)
+import Scylla.Route exposing (Route(..))
 import Url exposing (Url)
+import Url.Parser exposing (parse)
+import Url.Builder
 import Html exposing (div, text)
 import Http
 
@@ -18,6 +21,7 @@ init flags url key =
     let
         model =
             { key = key
+            , route = Maybe.withDefault Unknown <| parse Scylla.Route.route url
             , token = flags.token
             , loginUsername = ""
             , loginPassword = ""
@@ -32,7 +36,7 @@ init flags url key =
             }
         cmd = case flags.token of
             Just _ -> Cmd.none
-            Nothing -> Cmd.none
+            Nothing -> Nav.pushUrl key <| Url.Builder.absolute [ "login" ] []
     in
         (model, cmd)
 
@@ -48,13 +52,17 @@ update msg model = case msg of
     ChangeLoginUsername u -> ({ model | loginUsername = u }, Cmd.none)
     ChangeLoginPassword p -> ({ model | loginPassword = p }, Cmd.none)
     AttemptLogin -> (model, Scylla.Http.login model.apiUrl model.loginUsername model.loginPassword) -- TODO 
+    ChangeRoute r -> ({ model | route = r }, Cmd.none)
     ReceiveLoginResponse r -> updateLoginResponse model r
     ReceiveSyncResponse r -> updateSyncResponse model r
     _ -> (model, Cmd.none)
 
 updateLoginResponse : Model -> Result Http.Error LoginResponse -> (Model, Cmd Msg)
 updateLoginResponse model r = case r of
-    Ok lr -> ( { model | token = Just lr.accessToken } , firstSync model.apiUrl lr.accessToken )
+    Ok lr -> ( { model | token = Just lr.accessToken } , Cmd.batch
+        [ firstSync model.apiUrl lr.accessToken
+        , Nav.pushUrl model.key <| Url.Builder.absolute [] []
+        ] )
     Err e  -> (model, Cmd.none)
 
 updateSyncResponse : Model -> Result Http.Error SyncResponse -> (Model, Cmd Msg)
@@ -69,7 +77,7 @@ onUrlRequest : Browser.UrlRequest -> Msg
 onUrlRequest = TryUrl
 
 onUrlChange : Url -> Msg
-onUrlChange = ChangeUrl
+onUrlChange = ChangeRoute << Maybe.withDefault Unknown << parse Scylla.Route.route
 
 main = application
     { init = init

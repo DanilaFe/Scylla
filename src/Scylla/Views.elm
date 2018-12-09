@@ -1,6 +1,7 @@
 module Scylla.Views exposing (..)
 import Scylla.Model exposing (..)
 import Scylla.Sync exposing (..)
+import Scylla.Route exposing (..)
 import Json.Decode as Decode
 import Html exposing (Html, div, input, text, button, div, span)
 import Html.Attributes exposing (type_, value)
@@ -10,9 +11,11 @@ import Dict
 viewFull : Model -> List (Html Msg)
 viewFull model = 
     let
-        core = case model.token of
-            Just _ -> normalView model
-            Nothing -> loginView model 
+        core = case model.route of
+            Login -> loginView model 
+            Base -> normalView model
+            Room r -> normalView model
+            _ -> div [] []
         errorList = errorsView model.errors
     in
         [ errorList ] ++ [ core ] 
