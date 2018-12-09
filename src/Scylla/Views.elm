@@ -2,9 +2,10 @@ module Scylla.Views exposing (..)
 import Scylla.Model exposing (..)
 import Scylla.Sync exposing (..)
 import Scylla.Route exposing (..)
+import Url.Builder
 import Json.Decode as Decode
-import Html exposing (Html, div, input, text, button, div, span)
-import Html.Attributes exposing (type_, value)
+import Html exposing (Html, div, input, text, button, div, span, a)
+import Html.Attributes exposing (type_, value, href)
 import Html.Events exposing (onInput, onClick)
 import Dict
 
@@ -13,8 +14,11 @@ viewFull model =
     let
         core = case model.route of
             Login -> loginView model 
-            Base -> normalView model
-            Room r -> normalView model
+            Base -> baseView model
+            Room r -> Maybe.withDefault (div [] [])
+                <| Maybe.map (joinedRoomView model)
+                <| Maybe.andThen (Dict.get r)
+                <| Maybe.andThen .join model.sync.rooms
             _ -> div [] []
         errorList = errorsView model.errors
     in
@@ -26,8 +30,19 @@ errorsView = div [] << List.map errorView
 errorView : String -> Html Msg
 errorView s = div [] [ text s ]
 
-normalView : Model -> Html Msg
-normalView m = div [] []
+baseView : Model -> Html Msg
+baseView m =
+    let 
+        rooms = Maybe.withDefault (Dict.empty) <| Maybe.andThen .join <| m.sync.rooms
+    in
+        div [] <| Dict.values <| Dict.map roomListView rooms
+
+roomListView : String -> JoinedRoom -> Html Msg
+roomListView s jr =
+    let
+        name = Maybe.withDefault "<No Name>"  <| roomName jr
+    in
+        a [ href <| Url.Builder.absolute [ "room", s ] [] ] [ text name ]
 
 loginView : Model -> Html Msg
 loginView m = div []

@@ -1,7 +1,7 @@
 module Scylla.Sync exposing (..)
 import Scylla.Api exposing (..)
 import Dict exposing (Dict)
-import Json.Decode as Decode exposing (Decoder, int, string, float, list, value, dict, bool)
+import Json.Decode as Decode exposing (Decoder, int, string, float, list, value, dict, bool, field)
 import Json.Decode.Pipeline exposing (required, optional)
 
 -- Special Decoding
@@ -258,3 +258,12 @@ presenceDecoder =
 -- Business Logic
 mergeSyncResponse : SyncResponse -> SyncResponse -> SyncResponse
 mergeSyncResponse l r = r
+
+roomName : JoinedRoom -> Maybe String
+roomName jr = 
+    let
+        state = jr.state
+        nameEvent = List.head << List.sortBy (\e -> -e.originServerTs) << List.filter (\e -> e.type_ == "m.room.name")
+        name e = Result.toMaybe <| Decode.decodeValue (field "name" string) e.content
+    in
+        Maybe.andThen name <| Maybe.andThen nameEvent <| Maybe.andThen .events <| state

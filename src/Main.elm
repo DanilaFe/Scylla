@@ -1,4 +1,4 @@
-import Browser exposing (application)
+import Browser exposing (application, UrlRequest(..))
 import Browser.Navigation as Nav
 import Scylla.Sync exposing (..)
 import Scylla.Login exposing (..)
@@ -52,10 +52,15 @@ update msg model = case msg of
     ChangeLoginUsername u -> ({ model | loginUsername = u }, Cmd.none)
     ChangeLoginPassword p -> ({ model | loginPassword = p }, Cmd.none)
     AttemptLogin -> (model, Scylla.Http.login model.apiUrl model.loginUsername model.loginPassword) -- TODO 
+    TryUrl urlRequest -> updateTryUrl model urlRequest
     ChangeRoute r -> ({ model | route = r }, Cmd.none)
     ReceiveLoginResponse r -> updateLoginResponse model r
     ReceiveSyncResponse r -> updateSyncResponse model r
-    _ -> (model, Cmd.none)
+
+updateTryUrl : Model -> Browser.UrlRequest -> (Model, Cmd Msg)
+updateTryUrl m ur = case ur of
+    Internal u -> (m, Nav.pushUrl m.key (Url.toString u))
+    _ -> (m, Cmd.none)
 
 updateLoginResponse : Model -> Result Http.Error LoginResponse -> (Model, Cmd Msg)
 updateLoginResponse model r = case r of
