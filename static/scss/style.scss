@@ -118,3 +118,16 @@ div.message-wrapper {
         margin: 3px;
     }
 }
+
+table.events-wrapper {
+    td {
+        padding-left: 5px;
+    }
+}
+
+span.sender-wrapper {
+    border-radius: 2px;
+    padding-left: 5px;
+    padding-right: 5px;
+    float: right;
+}

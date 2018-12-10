@@ -2,12 +2,29 @@ module Scylla.Views exposing (..)
 import Scylla.Model exposing (..)
 import Scylla.Sync exposing (..)
 import Scylla.Route exposing (..)
+import Scylla.Fnv as Fnv
 import Url.Builder
 import Json.Decode as Decode
-import Html exposing (Html, div, input, text, button, div, span, a, h2)
-import Html.Attributes exposing (type_, value, href, class)
+import Html exposing (Html, div, input, text, button, div, span, a, h2, table, td, tr)
+import Html.Attributes exposing (type_, value, href, class, style)
 import Html.Events exposing (onInput, onClick)
 import Dict
+
+stringColor : String -> String
+stringColor s = 
+    let
+        hue = String.fromFloat <| (toFloat (Fnv.hash s)) / 4294967296 * 360
+    in
+        "hsl(" ++ hue ++ ", 82%, 71%)"
+
+senderName : String -> String
+senderName s =
+    let
+        colonIndex = Maybe.withDefault -1 
+            <| List.head
+            <| String.indexes ":" s
+    in
+        String.slice 1 colonIndex s
 
 viewFull : Model -> List (Html Msg)
 viewFull model = 
@@ -91,12 +108,25 @@ joinedRoomView m roomId jr =
             ]
 
 eventWrapperView : Model -> List (Html Msg) -> Html Msg
-eventWrapperView m = div []
+eventWrapperView m = table [ class "events-wrapper" ]
 
 eventView : Model -> RoomEvent -> Maybe (Html Msg)
-eventView m re = case re.type_ of
-    "m.room.message" -> messageView m re
-    _ -> Nothing
+eventView m re = 
+    let
+        viewFunction = case re.type_ of
+            "m.room.message" -> Just messageView
+            _ -> Nothing
+        createRow mhtml = tr []
+            [ td [] [ eventSenderView re.sender ]
+            , td [] [ mhtml ]
+            ]
+    in
+        Maybe.map createRow
+            <| Maybe.andThen (\f -> f m re) viewFunction
+
+eventSenderView : String -> Html Msg
+eventSenderView s =
+    span [ style "background-color" <| stringColor s, class "sender-wrapper" ] [ text <| senderName s ]
 
 messageView : Model -> RoomEvent -> Maybe (Html Msg)
 messageView m re =
@@ -111,9 +141,6 @@ messageTextView : Model -> RoomEvent -> Maybe (Html Msg)
 messageTextView m re =
     let
         body = Decode.decodeValue (Decode.field "body" Decode.string) re.content
-        wrap mtext = div []
-            [ span [] [ text re.sender ]
-            , span [] [ text mtext ]
-            ]
+        wrap mtext = span [] [ text mtext ]
     in
         Maybe.map wrap <| Result.toMaybe body
