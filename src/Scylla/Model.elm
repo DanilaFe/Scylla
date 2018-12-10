@@ -18,6 +18,8 @@ type alias Model =
     , apiUrl : ApiUrl
     , sync : SyncResponse
     , errors : List String
+    , roomText : Dict String String
+    , transactionId : Int
     }
 
 type Msg =
@@ -27,6 +29,9 @@ type Msg =
     | AttemptLogin -- During login screen, login button presed
     | TryUrl Browser.UrlRequest -- User attempts to change URL
     | ChangeRoute Route -- URL changes
+    | ChangeRoomText String String -- Change to a room's input text
+    | SendRoomText String -- Sends a message typed into a given room's input
+    | SendRoomTextResponse (Result Http.Error ()) -- A send message response finished
     | ReceiveSyncResponse (Result Http.Error SyncResponse) -- HTTP, Sync has finished
     | ReceiveLoginResponse (Result Http.Error LoginResponse) -- HTTP, Login has finished
 

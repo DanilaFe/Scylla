@@ -11,6 +11,7 @@ import Url.Parser exposing (parse)
 import Url.Builder
 import Html exposing (div, text)
 import Http
+import Dict
 
 type alias Flags =
     { token : Maybe String
@@ -33,6 +34,8 @@ init flags url key =
                 , accountData = Nothing
                 }
             , errors = []
+            , roomText = Dict.empty
+            , transactionId = 0
             }
         cmd = case flags.token of
             Just _ -> Cmd.none
@@ -56,6 +59,20 @@ update msg model = case msg of
     ChangeRoute r -> ({ model | route = r }, Cmd.none)
     ReceiveLoginResponse r -> updateLoginResponse model r
     ReceiveSyncResponse r -> updateSyncResponse model r
+    ChangeRoomText r t -> ({ model | roomText = Dict.insert r t model.roomText}, Cmd.none)
+    SendRoomText r -> updateSendRoomText model r
+    SendRoomTextResponse r -> (model, Cmd.none)
+
+updateSendRoomText : Model -> String -> (Model, Cmd Msg)
+updateSendRoomText m r =
+    let
+        token = Maybe.withDefault "" m.token
+        message = Maybe.andThen (\s -> if s == "" then Nothing else Just s)
+            <| Dict.get r m.roomText
+        command = Maybe.withDefault Cmd.none
+            <| Maybe.map (sendTextMessage m.apiUrl token m.transactionId r) message
+    in
+        ({ m | roomText = Dict.insert r "" m.roomText, transactionId = m.transactionId + 1 }, command)
 
 updateTryUrl : Model -> Browser.UrlRequest -> (Model, Cmd Msg)
 updateTryUrl m ur = case ur of

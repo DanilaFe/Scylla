@@ -4,7 +4,7 @@ import Scylla.Api exposing (..)
 import Scylla.Sync exposing (syncResponseDecoder)
 import Scylla.Login exposing (loginResponseDecoder, Username, Password)
 import Json.Encode exposing (object, string, int)
-import Http exposing (request, emptyBody, jsonBody, expectJson)
+import Http exposing (request, emptyBody, jsonBody, expectJson, expectWhatever)
 
 fullUrl : ApiUrl -> ApiUrl
 fullUrl s = s ++ "/_matrix/client/r0"
@@ -28,6 +28,23 @@ sync nextBatch apiUrl token = request
     , url = (fullUrl apiUrl) ++ "/sync" ++ "?since=" ++ (nextBatch) ++ "&timeout=10000"
     , body = emptyBody
     , expect = expectJson ReceiveSyncResponse syncResponseDecoder
+    , timeout = Nothing
+    , tracker = Nothing
+    }
+
+sendTextMessage : ApiUrl -> ApiToken -> Int -> String -> String -> Cmd Msg
+sendTextMessage apiUrl token transactionId room message = request
+    { method = "PUT"
+    , headers = authenticatedHeaders token
+    , url = (fullUrl apiUrl)
+        ++ "/rooms/" ++ room
+        ++ "/send/" ++ "m.room.message"
+        ++ "/" ++ (String.fromInt transactionId)
+    , body = jsonBody <| object
+        [ ("msgtype", string "m.text")
+        , ("body", string message)
+        ]
+    , expect = expectWhatever SendRoomTextResponse
     , timeout = Nothing
     , tracker = Nothing
     }

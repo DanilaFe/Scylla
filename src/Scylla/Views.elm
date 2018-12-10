@@ -16,7 +16,7 @@ viewFull model =
             Login -> loginView model 
             Base -> baseView model
             Room r -> Maybe.withDefault (div [] [])
-                <| Maybe.map (joinedRoomView model)
+                <| Maybe.map (joinedRoomView model r)
                 <| Maybe.andThen (Dict.get r)
                 <| Maybe.andThen .join model.sync.rooms
             _ -> div [] []
@@ -52,14 +52,22 @@ loginView m = div []
     , button [ onClick AttemptLogin ] [ text "Log In" ]
     ]
 
-joinedRoomView : Model -> JoinedRoom -> Html Msg
-joinedRoomView m jr =
+joinedRoomView : Model -> String -> JoinedRoom -> Html Msg
+joinedRoomView m roomId jr =
     let
         events = Maybe.withDefault [] <| Maybe.andThen .events jr.timeline
         renderedEvents = List.filterMap (eventView m) events
         eventContainer = eventContainerView m renderedEvents
+        messageInput = div []
+            [ input
+                [ type_ "text"
+                , onInput <| ChangeRoomText roomId
+                , value <| Maybe.withDefault "" <| Dict.get roomId m.roomText
+                ]  []
+            , button [ onClick <| SendRoomText roomId ] [ text "Send" ]
+            ]
     in
-        div [] [ eventContainer ]
+        div [] [ eventContainer, messageInput ]
 
 eventContainerView : Model -> List (Html Msg) -> Html Msg
 eventContainerView m = div []
