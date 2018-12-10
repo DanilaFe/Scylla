@@ -34,8 +34,12 @@ baseView : Model -> Html Msg
 baseView m =
     let 
         rooms = Maybe.withDefault (Dict.empty) <| Maybe.andThen .join <| m.sync.rooms
+        roomList = div [ class "rooms-list" ] <| Dict.values <| Dict.map roomListView rooms
     in
-        div [] <| Dict.values <| Dict.map roomListView rooms
+        div [ class "rooms-wrapper" ]
+            [ h2 [] [ text "Rooms" ]
+            , roomList
+            ]
 
 roomListView : String -> JoinedRoom -> Html Msg
 roomListView s jr =
@@ -58,7 +62,7 @@ joinedRoomView m roomId jr =
     let
         events = Maybe.withDefault [] <| Maybe.andThen .events jr.timeline
         renderedEvents = List.filterMap (eventView m) events
-        eventContainer = eventContainerView m renderedEvents
+        eventWrapper = eventWrapperView m renderedEvents
         messageInput = div []
             [ input
                 [ type_ "text"
@@ -68,10 +72,10 @@ joinedRoomView m roomId jr =
             , button [ onClick <| SendRoomText roomId ] [ text "Send" ]
             ]
     in
-        div [] [ eventContainer, messageInput ]
+        div [] [ eventWrapper, messageInput ]
 
-eventContainerView : Model -> List (Html Msg) -> Html Msg
-eventContainerView m = div []
+eventWrapperView : Model -> List (Html Msg) -> Html Msg
+eventWrapperView m = div []
 
 eventView : Model -> RoomEvent -> Maybe (Html Msg)
 eventView m re = case re.type_ of
