@@ -4,8 +4,8 @@ import Scylla.Sync exposing (..)
 import Scylla.Route exposing (..)
 import Url.Builder
 import Json.Decode as Decode
-import Html exposing (Html, div, input, text, button, div, span, a)
-import Html.Attributes exposing (type_, value, href)
+import Html exposing (Html, div, input, text, button, div, span, a, h2)
+import Html.Attributes exposing (type_, value, href, class)
 import Html.Events exposing (onInput, onClick)
 import Dict
 
@@ -45,8 +45,9 @@ roomListView s jr =
         a [ href <| Url.Builder.absolute [ "room", s ] [] ] [ text name ]
 
 loginView : Model -> Html Msg
-loginView m = div []
-    [ input [ type_ "text", value m.loginUsername, onInput ChangeLoginUsername] []
+loginView m = div [ class "login-wrapper" ]
+    [ h2 [] [ text "Log In" ]
+    , input [ type_ "text", value m.loginUsername, onInput ChangeLoginUsername] []
     , input [ type_ "password", value m.loginPassword, onInput ChangeLoginPassword ] []
     , input [ type_ "text", value m.apiUrl, onInput ChangeApiUrl ] []
     , button [ onClick AttemptLogin ] [ text "Log In" ]

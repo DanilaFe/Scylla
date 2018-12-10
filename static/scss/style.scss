@@ -1,0 +1,63 @@
+@import url('https://fonts.googleapis.com/css?family=Open+Sans');
+$primary-color: #53C0FA;
+$primary-color-highlight: #4298C7;
+$primary-color-light: #9FDBFB;
+$active-input-color: white;
+$transition-duration: .125s;
+
+$inactive-input-color: darken($active-input-color, 3%);
+$active-input-border-color: $primary-color;
+$inactive-input-border-color: darken($inactive-input-color, 10%);
+
+body {
+    font-family: 'Open Sans', sans-serif;
+    margin: 0px;
+}
+
+@mixin input-common {
+    padding: 5px;
+    border-radius: 3px;
+    outline: none;
+
+    transition: background-color $transition-duration;
+}
+
+div.login-wrapper {
+    display: flex;
+    flex-direction: column;
+    max-width: 300px;
+    margin: auto;
+    margin-top: 20px;
+
+    input, button {
+        margin: 3px;
+    }
+
+    h2 {
+        margin: 0px;
+        margin-bottom: 3px;
+    }
+}
+
+input {
+    @include input-common();
+    background-color: $inactive-input-color;
+    color: black;
+    border: .5px solid $inactive-input-border-color;
+
+    &:focus {
+        background-color: $active-input-color;
+        border-color: $active-input-border-color;
+    }
+}
+
+button {
+    @include input-common();
+    border: none;
+    background-color: $primary-color;
+    color: white;
+
+    &:hover, &:focus {
+        background-color: $primary-color-highlight;
+    }
+}
