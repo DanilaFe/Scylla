@@ -12,13 +12,13 @@ import Dict
 viewFull : Model -> List (Html Msg)
 viewFull model = 
     let
+        room r = Maybe.map (\jr -> (r, jr))
+            <| Maybe.andThen (Dict.get r)
+            <| Maybe.andThen .join model.sync.rooms
         core = case model.route of
             Login -> loginView model 
-            Base -> baseView model
-            Room r -> Maybe.withDefault (div [] [])
-                <| Maybe.map (joinedRoomView model r)
-                <| Maybe.andThen (Dict.get r)
-                <| Maybe.andThen .join model.sync.rooms
+            Base -> baseView model Nothing
+            Room r -> baseView model <| room r
             _ -> div [] []
         errorList = errorsView model.errors
     in
@@ -30,19 +30,31 @@ errorsView = div [] << List.map errorView
 errorView : String -> Html Msg
 errorView s = div [] [ text s ]
 
-baseView : Model -> Html Msg
-baseView m =
-    let 
+baseView : Model -> Maybe (String, JoinedRoom) -> Html Msg
+baseView m jr = 
+    let
+        roomView = case jr of
+            Just (id, r) -> joinedRoomView m id r
+            Nothing -> div [] []
+    in
+        div [ class "base-wrapper" ]
+        [ roomListView m
+        , roomView
+        ]
+
+roomListView : Model -> Html Msg
+roomListView m =
+    let
         rooms = Maybe.withDefault (Dict.empty) <| Maybe.andThen .join <| m.sync.rooms
-        roomList = div [ class "rooms-list" ] <| Dict.values <| Dict.map roomListView rooms
+        roomList = div [ class "rooms-list" ] <| Dict.values <| Dict.map roomListElementView rooms
     in
         div [ class "rooms-wrapper" ]
             [ h2 [] [ text "Rooms" ]
             , roomList
             ]
 
-roomListView : String -> JoinedRoom -> Html Msg
-roomListView s jr =
+roomListElementView : String -> JoinedRoom -> Html Msg
+roomListElementView s jr =
     let
         name = Maybe.withDefault "<No Name>"  <| roomName jr
     in
@@ -63,7 +75,7 @@ joinedRoomView m roomId jr =
         events = Maybe.withDefault [] <| Maybe.andThen .events jr.timeline
         renderedEvents = List.filterMap (eventView m) events
         eventWrapper = eventWrapperView m renderedEvents
-        messageInput = div []
+        messageInput = div [ class "message-wrapper" ]
             [ input
                 [ type_ "text"
                 , onInput <| ChangeRoomText roomId
@@ -72,7 +84,11 @@ joinedRoomView m roomId jr =
             , button [ onClick <| SendRoomText roomId ] [ text "Send" ]
             ]
     in
-        div [] [ eventWrapper, messageInput ]
+        div [ class "room-wrapper" ]
+            [ h2 [] [ text <| Maybe.withDefault "<No Name>" <| roomName jr ]
+            , eventWrapper
+            , messageInput
+            ]
 
 eventWrapperView : Model -> List (Html Msg) -> Html Msg
 eventWrapperView m = div []

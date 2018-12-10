@@ -55,6 +55,11 @@ a {
     }
 }
 
+h2 {
+    margin: 0px;
+    margin-bottom: 3px;
+}
+
 /*
  * Login Screen
  */
@@ -68,9 +73,48 @@ div.login-wrapper {
     input, button {
         margin: 3px;
     }
+}
 
-    h2 {
-        margin: 0px;
-        margin-bottom: 3px;
+/*
+ * Base View
+ */
+div.base-wrapper {
+    display: flex;
+
+    div {
+        margin: 3px;
+    }
+}
+
+/*
+ * The list of rooms
+ */
+div.rooms-wrapper {
+    a {
+        display: block;
+    }
+}
+
+/*
+ * The current room, if any.
+ */
+div.room-wrapper {
+    flex-grow: 1;
+}
+
+/*
+ * The message input and send button.
+ */
+div.message-wrapper {
+    display: flex;
+
+    input {
+        flex-grow: 9;   
+        margin: 3px;
+    }
+
+    button {
+        flex-grow: 1;
+        margin: 3px;
     }
 }
