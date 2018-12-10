@@ -22,23 +22,6 @@ body {
     transition: background-color $transition-duration;
 }
 
-div.login-wrapper {
-    display: flex;
-    flex-direction: column;
-    max-width: 300px;
-    margin: auto;
-    margin-top: 20px;
-
-    input, button {
-        margin: 3px;
-    }
-
-    h2 {
-        margin: 0px;
-        margin-bottom: 3px;
-    }
-}
-
 input {
     @include input-common();
     background-color: $inactive-input-color;
@@ -56,8 +39,38 @@ button {
     border: none;
     background-color: $primary-color;
     color: white;
+    text-transform: uppercase;
 
     &:hover, &:focus {
         background-color: $primary-color-highlight;
+    }
+}
+
+a {
+    text-decoration: none;
+    color: $primary-color;
+
+    &:hover {
+        color: $primary-color-highlight;
+    }
+}
+
+/*
+ * Login Screen
+ */
+div.login-wrapper {
+    display: flex;
+    flex-direction: column;
+    max-width: 300px;
+    margin: auto;
+    margin-top: 20px;
+
+    input, button {
+        margin: 3px;
+    }
+
+    h2 {
+        margin: 0px;
+        margin-bottom: 3px;
     }
 }
