@@ -12,6 +12,7 @@ $inactive-input-border-color: darken($inactive-input-color, 10%);
 body {
     font-family: 'Open Sans', sans-serif;
     margin: 0px;
+    background-color: #fbfbfb;
 }
 
 @mixin input-common {
@@ -83,6 +84,12 @@ div.base-wrapper {
 
     div {
         margin: 3px;
+    }
+
+    h2 {
+        padding-bottom: 5px;
+        margin-bottom: 5px;
+        border-bottom: 1px solid $inactive-input-border-color;
     }
 }
 
