@@ -9,6 +9,10 @@ $inactive-input-color: darken($active-input-color, 3%);
 $active-input-border-color: $primary-color;
 $inactive-input-border-color: darken($inactive-input-color, 10%);
 
+html, body {
+    height: 100vh;
+}
+
 body {
     font-family: 'Open Sans', sans-serif;
     margin: 0px;
@@ -81,9 +85,11 @@ div.login-wrapper {
  */
 div.base-wrapper {
     display: flex;
+    height: 100%;
 
     div {
-        margin: 3px;
+        padding: 3px;
+        box-sizing: border-box;
     }
 
     h2 {
@@ -109,6 +115,9 @@ div.rooms-wrapper {
  */
 div.room-wrapper {
     flex-grow: 1;
+    display: flex;
+    height: 100%;
+    flex-direction: column;
 }
 
 /*
@@ -128,7 +137,12 @@ div.message-wrapper {
     }
 }
 
-table.events-wrapper {
+div.events-wrapper {
+    overflow-y: scroll;
+    flex-grow: 1;
+}
+
+table.events-table {
     td {
         padding-left: 5px;
         vertical-align: top;

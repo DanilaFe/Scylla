@@ -108,7 +108,7 @@ joinedRoomView m roomId jr =
             ]
 
 eventWrapperView : Model -> List (Html Msg) -> Html Msg
-eventWrapperView m = table [ class "events-wrapper" ]
+eventWrapperView m es = div [ class "events-wrapper" ] [ table [ class "events-table" ] es ]
 
 eventView : Model -> RoomEvent -> Maybe (Html Msg)
 eventView m re = 
