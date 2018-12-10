@@ -90,6 +90,8 @@ div.base-wrapper {
  * The list of rooms
  */
 div.rooms-wrapper {
+    flex-shrink: 0;
+
     a {
         display: block;
     }
@@ -122,6 +124,7 @@ div.message-wrapper {
 table.events-wrapper {
     td {
         padding-left: 5px;
+        vertical-align: top;
     }
 }
 
