@@ -3,6 +3,8 @@ import Scylla.Model exposing (..)
 import Scylla.Sync exposing (..)
 import Scylla.Route exposing (..)
 import Scylla.Fnv as Fnv
+import Svg
+import Svg.Attributes
 import Url.Builder
 import Json.Decode as Decode
 import Html exposing (Html, div, input, text, button, div, span, a, h2, table, td, tr)
@@ -98,7 +100,7 @@ joinedRoomView m roomId jr =
                 , onInput <| ChangeRoomText roomId
                 , value <| Maybe.withDefault "" <| Dict.get roomId m.roomText
                 ]  []
-            , button [ onClick <| SendRoomText roomId ] [ text "Send" ]
+            , button [ onClick <| SendRoomText roomId ] [ iconView "send" ]
             ]
     in
         div [ class "room-wrapper" ]
@@ -106,6 +108,15 @@ joinedRoomView m roomId jr =
             , eventWrapper
             , messageInput
             ]
+
+iconView : String -> Html Msg
+iconView name =
+    let
+        url = Url.Builder.absolute [ "static", "svg", "feather-sprite.svg" ] [] 
+    in
+        Svg.svg
+            [ Svg.Attributes.class "feather-icon"
+            ] [ Svg.use [ Svg.Attributes.xlinkHref (url ++ "#" ++ name) ] [] ]
 
 eventWrapperView : Model -> List (Html Msg) -> Html Msg
 eventWrapperView m es = div [ class "events-wrapper" ] [ table [ class "events-table" ] es ]
