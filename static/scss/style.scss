@@ -3,6 +3,8 @@ $primary-color: #53C0FA;
 $primary-color-highlight: #4298C7;
 $primary-color-light: #9FDBFB;
 $active-input-color: white;
+$background-color: #fafafa;
+$background-color-dark: darken($background-color, 4%);
 $transition-duration: .125s;
 
 $inactive-input-color: darken($active-input-color, 3%);
@@ -16,7 +18,7 @@ html, body {
 body {
     font-family: 'Open Sans', sans-serif;
     margin: 0px;
-    background-color: #fbfbfb;
+    background-color: $background-color;
 }
 
 @mixin input-common {
@@ -88,14 +90,8 @@ div.base-wrapper {
     height: 100%;
 
     div {
-        padding: 3px;
+        padding: 5px;
         box-sizing: border-box;
-    }
-
-    h2 {
-        padding-bottom: 5px;
-        margin-bottom: 5px;
-        border-bottom: 1px solid $inactive-input-border-color;
     }
 }
 
@@ -117,7 +113,7 @@ div.room-wrapper {
     flex-grow: 1;
     display: flex;
     height: 100%;
-    flex-direction: column;
+    flex-direction: column;  
 }
 
 /*
@@ -143,9 +139,21 @@ div.events-wrapper {
 }
 
 table.events-table {
+    border-collapse: collapse;
+    width: 100%;
+
     td {
-        padding-left: 5px;
+        padding: 5px;
         vertical-align: top;
+    }
+
+    td:nth-child(1) {
+        width: 0px;
+        white-space: nowrap;
+    }
+
+    tr:nth-child(2n) {
+        background-color: $background-color-dark;
     }
 }
 
@@ -153,7 +161,10 @@ span.sender-wrapper {
     border-radius: 2px;
     padding-left: 5px;
     padding-right: 5px;
-    float: right;
+    display: inline-block;
+    box-sizing: border-box;
+    text-align: center;
+    width: 100%;
 }
 
 /**
