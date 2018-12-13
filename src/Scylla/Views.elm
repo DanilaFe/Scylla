@@ -69,7 +69,7 @@ roomListElementView s jr =
     let
         name = Maybe.withDefault "<No Name>"  <| roomName jr
     in
-        a [ href <| Url.Builder.absolute [ "room", s ] [] ] [ text name ]
+        a [ href <| roomUrl s ] [ text name ]
 
 loginView : Model -> Html Msg
 loginView m = div [ class "login-wrapper" ]

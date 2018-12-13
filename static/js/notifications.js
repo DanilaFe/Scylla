@@ -9,9 +9,8 @@ function setupNotificationPorts(app) {
         }
         var n = new Notification(data.name, options)
         n.onclick = function() {
-            app.ports.onNotificationClickPort.send({
-                "room" : data.room
-            });
+            app.ports.onNotificationClickPort.send(data.room);
+            n.close();
         }
     })
 }

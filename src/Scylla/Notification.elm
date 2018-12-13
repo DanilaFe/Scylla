@@ -8,4 +8,4 @@ type alias Notification =
     }
 
 port sendNotificationPort : Notification -> Cmd msg
-port onNotificationClickPort : (Json.Decode.Value -> msg) -> Sub msg
+port onNotificationClickPort : (String -> msg) -> Sub msg

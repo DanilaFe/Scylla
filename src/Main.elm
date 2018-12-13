@@ -59,6 +59,7 @@ update msg model = case msg of
     ChangeLoginPassword p -> ({ model | loginPassword = p }, Cmd.none)
     AttemptLogin -> (model, Scylla.Http.login model.apiUrl model.loginUsername model.loginPassword) -- TODO 
     TryUrl urlRequest -> updateTryUrl model urlRequest
+    OpenRoom s -> (model, Nav.pushUrl model.key <| roomUrl s)
     ChangeRoute r -> ({ model | route = r }, Cmd.none)
     ReceiveLoginResponse r -> updateLoginResponse model r
     ReceiveFirstSyncResponse r -> updateSyncResponse model r False
@@ -129,7 +130,7 @@ updateSyncResponse model r notify =
             _ -> (model, syncCmd)
 
 subscriptions : Model -> Sub Msg
-subscriptions m = Sub.none
+subscriptions m = onNotificationClickPort OpenRoom
 
 onUrlRequest : Browser.UrlRequest -> Msg
 onUrlRequest = TryUrl

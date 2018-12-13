@@ -5,6 +5,7 @@ import Scylla.Login exposing (LoginResponse, Username, Password)
 import Scylla.UserData exposing (UserData)
 import Scylla.Route exposing (Route)
 import Browser.Navigation as Nav
+import Url.Builder
 import Dict exposing (Dict)
 import Browser
 import Http
@@ -30,6 +31,7 @@ type Msg =
     | ChangeLoginPassword Password -- During login screen: the password
     | AttemptLogin -- During login screen, login button presed
     | TryUrl Browser.UrlRequest -- User attempts to change URL
+    | OpenRoom String -- We try open a room
     | ChangeRoute Route -- URL changes
     | ChangeRoomText String String -- Change to a room's input text
     | SendRoomText String -- Sends a message typed into a given room's input
@@ -41,3 +43,9 @@ type Msg =
 
 displayName : Model -> Username -> String
 displayName m s = Maybe.withDefault (senderName s) <| Maybe.andThen .displayName <| Dict.get s m.userData
+
+roomUrl : String -> String
+roomUrl s = Url.Builder.absolute [ "room", s ] []
+
+loginUrl : String
+loginUrl = Url.Builder.absolute [ "login" ] []
