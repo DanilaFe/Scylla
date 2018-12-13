@@ -3,6 +3,7 @@ import Scylla.Model exposing (..)
 import Scylla.Api exposing (..)
 import Scylla.Sync exposing (syncResponseDecoder)
 import Scylla.Login exposing (loginResponseDecoder, Username, Password)
+import Scylla.UserData exposing (userDataDecoder, UserData)
 import Json.Encode exposing (object, string, int)
 import Http exposing (request, emptyBody, jsonBody, expectJson, expectWhatever)
 
@@ -63,6 +64,17 @@ login apiUrl username password = request
         , ("password", string password)
         ]
     , expect = expectJson ReceiveLoginResponse loginResponseDecoder
+    , timeout = Nothing
+    , tracker = Nothing
+    }
+
+userData : ApiUrl -> ApiToken -> Username -> Cmd Msg
+userData apiUrl token username = request
+    { method = "GET"
+    , headers = authenticatedHeaders token
+    , url = (fullUrl apiUrl) ++ "/profile/" ++ username
+    , body = emptyBody
+    , expect = expectJson (ReceiveUserData username) userDataDecoder
     , timeout = Nothing
     , tracker = Nothing
     }

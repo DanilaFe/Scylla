@@ -2,6 +2,7 @@ module Scylla.Model exposing (..)
 import Scylla.Api exposing (..)
 import Scylla.Sync exposing (SyncResponse, JoinedRoom)
 import Scylla.Login exposing (LoginResponse, Username, Password)
+import Scylla.UserData exposing (UserData)
 import Scylla.Route exposing (Route)
 import Browser.Navigation as Nav
 import Dict exposing (Dict)
@@ -35,4 +36,5 @@ type Msg =
     | ReceiveFirstSyncResponse (Result Http.Error SyncResponse) -- HTTP, Sync has finished
     | ReceiveSyncResponse (Result Http.Error SyncResponse) -- HTTP, Sync has finished
     | ReceiveLoginResponse (Result Http.Error LoginResponse) -- HTTP, Login has finished
+    | ReceiveUserData Username (Result Http.Error UserData)
 

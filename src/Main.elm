@@ -60,6 +60,7 @@ update msg model = case msg of
     ReceiveLoginResponse r -> updateLoginResponse model r
     ReceiveFirstSyncResponse r -> updateSyncResponse model r False
     ReceiveSyncResponse r -> updateSyncResponse model r True
+    ReceiveUserData s r -> (model, Cmd.none)
     ChangeRoomText r t -> ({ model | roomText = Dict.insert r t model.roomText}, Cmd.none)
     SendRoomText r -> updateSendRoomText model r
     SendRoomTextResponse r -> (model, Cmd.none)
