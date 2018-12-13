@@ -309,11 +309,15 @@ mergeState s1 s2 = State <| mergeMaybe mergeStateEvents s1.events s2.events
 mergeTimeline : Timeline -> Timeline -> Timeline
 mergeTimeline t1 t2 = Timeline (mergeMaybe mergeRoomEvents t1.events t2.events) Nothing t2.prevBatch
 
+mergeEphemeral : Ephemeral -> Ephemeral -> Ephemeral
+mergeEphemeral e1 e2 = Ephemeral <| mergeMaybe mergeEvents e1.events e2.events
+
 mergeJoinedRoom : JoinedRoom -> JoinedRoom -> JoinedRoom
 mergeJoinedRoom r1 r2 =
     { r2 | state = mergeMaybe mergeState r1.state r2.state
     , timeline = mergeMaybe mergeTimeline r1.timeline r2.timeline
     , accountData = mergeMaybe mergeAccountData r1.accountData r2.accountData
+    , ephemeral = mergeMaybe mergeEphemeral r1.ephemeral r2.ephemeral
     }
 
 mergeInviteState : InviteState -> InviteState -> InviteState 
