@@ -1,6 +1,7 @@
 module Scylla.Sync exposing (..)
 import Scylla.Api exposing (..)
 import Scylla.Notification exposing (..)
+import Scylla.Login exposing (Username)
 import Dict exposing (Dict)
 import Json.Decode as Decode exposing (Decoder, int, string, float, list, value, dict, bool, field)
 import Json.Decode.Pipeline exposing (required, optional)
@@ -384,3 +385,18 @@ joinedRoomsEvents s =
     Maybe.withDefault Dict.empty
     <| Maybe.map (Dict.map (\k v -> Maybe.withDefault [] <| Maybe.andThen .events v.timeline))
     <| Maybe.andThen .join s.rooms
+
+-- Business Logic: User Extraction
+roomsUsers : SyncResponse -> List Username
+roomsUsers s =
+    let
+        users dict =
+            List.map .sender
+            <| (List.concatMap <| Maybe.withDefault [] << .events)
+            <| (List.filterMap .timeline)
+            <| Dict.values dict
+        usersFor f = Maybe.withDefault [] <| Maybe.map users <| Maybe.andThen f s.rooms
+        joinedUsers = usersFor .join
+        leftUsers = usersFor .leave
+    in
+        leftUsers ++ joinedUsers

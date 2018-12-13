@@ -36,6 +36,7 @@ init flags url key =
             , errors = []
             , roomText = Dict.empty
             , transactionId = 0
+            , userData = Dict.empty
             }
         cmd = case flags.token of
             Just _ -> Cmd.none

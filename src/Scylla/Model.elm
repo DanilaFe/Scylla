@@ -21,6 +21,7 @@ type alias Model =
     , errors : List String
     , roomText : Dict String String
     , transactionId : Int
+    , userData : Dict Username UserData
     }
 
 type Msg =
