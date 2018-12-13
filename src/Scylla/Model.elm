@@ -32,6 +32,7 @@ type Msg =
     | ChangeRoomText String String -- Change to a room's input text
     | SendRoomText String -- Sends a message typed into a given room's input
     | SendRoomTextResponse (Result Http.Error ()) -- A send message response finished
+    | ReceiveFirstSyncResponse (Result Http.Error SyncResponse) -- HTTP, Sync has finished
     | ReceiveSyncResponse (Result Http.Error SyncResponse) -- HTTP, Sync has finished
     | ReceiveLoginResponse (Result Http.Error LoginResponse) -- HTTP, Login has finished
 

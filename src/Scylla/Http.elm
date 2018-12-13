@@ -16,7 +16,7 @@ firstSync apiUrl token = request
     , headers = authenticatedHeaders token
     , url = (fullUrl apiUrl) ++ "/sync"
     , body = emptyBody
-    , expect = expectJson ReceiveSyncResponse syncResponseDecoder
+    , expect = expectJson ReceiveFirstSyncResponse syncResponseDecoder
     , timeout = Nothing
     , tracker = Nothing
     }

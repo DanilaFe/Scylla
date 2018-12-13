@@ -58,7 +58,8 @@ update msg model = case msg of
     TryUrl urlRequest -> updateTryUrl model urlRequest
     ChangeRoute r -> ({ model | route = r }, Cmd.none)
     ReceiveLoginResponse r -> updateLoginResponse model r
-    ReceiveSyncResponse r -> updateSyncResponse model r
+    ReceiveFirstSyncResponse r -> updateSyncResponse model r False
+    ReceiveSyncResponse r -> updateSyncResponse model r True
     ChangeRoomText r t -> ({ model | roomText = Dict.insert r t model.roomText}, Cmd.none)
     SendRoomText r -> updateSendRoomText model r
     SendRoomTextResponse r -> (model, Cmd.none)
@@ -87,8 +88,8 @@ updateLoginResponse model r = case r of
         ] )
     Err e  -> (model, Cmd.none)
 
-updateSyncResponse : Model -> Result Http.Error SyncResponse -> (Model, Cmd Msg)
-updateSyncResponse model r =
+updateSyncResponse : Model -> Result Http.Error SyncResponse -> Bool -> (Model, Cmd Msg)
+updateSyncResponse model r notify =
     let
         token = Maybe.withDefault "" model.token
         nextBatch = Result.withDefault model.sync.nextBatch

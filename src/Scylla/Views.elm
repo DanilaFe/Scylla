@@ -19,15 +19,6 @@ stringColor s =
     in
         "hsl(" ++ hue ++ ", 82%, 71%)"
 
-senderName : String -> String
-senderName s =
-    let
-        colonIndex = Maybe.withDefault -1 
-            <| List.head
-            <| String.indexes ":" s
-    in
-        String.slice 1 colonIndex s
-
 viewFull : Model -> List (Html Msg)
 viewFull model = 
     let

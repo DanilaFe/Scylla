@@ -7,6 +7,11 @@ function setupNotificationPorts(app) {
         var options = {
             "body" : data.text
         }
-        new Notification(data.name, options)
+        var n = new Notification(data.name, options)
+        n.onclick = function() {
+            app.ports.onNotificationClickPort.send({
+                "room" : data.room
+            });
+        }
     })
 }

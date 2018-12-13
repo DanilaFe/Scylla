@@ -1,5 +1,6 @@
 module Scylla.Sync exposing (..)
 import Scylla.Api exposing (..)
+import Scylla.Notification exposing (..)
 import Dict exposing (Dict)
 import Json.Decode as Decode exposing (Decoder, int, string, float, list, value, dict, bool, field)
 import Json.Decode.Pipeline exposing (required, optional)
@@ -267,6 +268,7 @@ uniqueByRecursive f l s = case l of
 uniqueBy : (a -> comparable) -> List a -> List a
 uniqueBy f l = uniqueByRecursive f l Set.empty
 
+-- Business Logic: Merging
 mergeMaybe : (a -> a -> a) -> Maybe a -> Maybe a -> Maybe a
 mergeMaybe f l r = case (l, r) of
     (Just v1, Just v2) -> Just <| f v1 v2
@@ -347,6 +349,16 @@ mergeSyncResponse l r =
     , accountData = mergeMaybe mergeAccountData l.accountData r.accountData
     }
 
+-- Business Logic: Names
+senderName : String -> String
+senderName s =
+    let
+        colonIndex = Maybe.withDefault -1 
+            <| List.head
+            <| String.indexes ":" s
+    in
+        String.slice 1 colonIndex s
+
 roomName : JoinedRoom -> Maybe String
 roomName jr = 
     let
@@ -355,3 +367,20 @@ roomName jr =
         name e = Result.toMaybe <| Decode.decodeValue (field "name" string) e.content
     in
         Maybe.andThen name <| Maybe.andThen nameEvent <| Maybe.andThen .events <| state
+
+-- Business Logic: Event Extraction
+notificationEvent : SyncResponse -> Maybe (String, RoomEvent)
+notificationEvent s =
+    let
+        applyPair k = List.map (\v -> (k, v))
+    in
+        List.head
+        <| List.sortBy (\(k, v) -> v.originServerTs)
+        <| Dict.foldl (\k v a -> a ++ applyPair k v) []
+        <| joinedRoomsEvents s
+
+joinedRoomsEvents : SyncResponse -> Dict String (List RoomEvent)
+joinedRoomsEvents s =
+    Maybe.withDefault Dict.empty
+    <| Maybe.map (Dict.map (\k v -> Maybe.withDefault [] <| Maybe.andThen .events v.timeline))
+    <| Maybe.andThen .join s.rooms
