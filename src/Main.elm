@@ -6,6 +6,7 @@ import Scylla.Model exposing (..)
 import Scylla.Http exposing (..)
 import Scylla.Views exposing (viewFull)
 import Scylla.Route exposing (Route(..))
+import Scylla.UserData exposing (..)
 import Url exposing (Url)
 import Url.Parser exposing (parse)
 import Url.Builder
@@ -61,10 +62,15 @@ update msg model = case msg of
     ReceiveLoginResponse r -> updateLoginResponse model r
     ReceiveFirstSyncResponse r -> updateSyncResponse model r False
     ReceiveSyncResponse r -> updateSyncResponse model r True
-    ReceiveUserData s r -> (model, Cmd.none)
+    ReceiveUserData s r -> updateUserData model s r
     ChangeRoomText r t -> ({ model | roomText = Dict.insert r t model.roomText}, Cmd.none)
     SendRoomText r -> updateSendRoomText model r
     SendRoomTextResponse r -> (model, Cmd.none)
+
+updateUserData : Model -> String -> Result Http.Error UserData -> (Model, Cmd Msg)
+updateUserData m s r = case r of
+    Ok ud -> ({ m | userData = Dict.insert s ud m.userData }, Cmd.none)
+    Err e -> (m, userData m.apiUrl (Maybe.withDefault "" m.token) s)
 
 updateSendRoomText : Model -> String -> (Model, Cmd Msg)
 updateSendRoomText m r =
@@ -96,11 +102,13 @@ updateSyncResponse model r notify =
         token = Maybe.withDefault "" model.token
         nextBatch = Result.withDefault model.sync.nextBatch
             <| Result.map .nextBatch r
-        cmd = sync nextBatch model.apiUrl token
+        syncCmd = sync nextBatch model.apiUrl token
+        newUsers sr = List.filter (\s -> not <| Dict.member s model.userData) <| roomsUsers sr
+        newUserCommands sr = Cmd.batch <| List.map (userData model.apiUrl <| Maybe.withDefault "" model.token) <| newUsers sr
     in
         case r of
-            Ok sr -> ({ model | sync = mergeSyncResponse model.sync sr }, cmd)
-            _ -> (model, cmd)
+            Ok sr -> ({ model | sync = mergeSyncResponse model.sync sr }, Cmd.batch [ syncCmd, newUserCommands sr ])
+            _ -> (model, syncCmd)
 
 subscriptions : Model -> Sub Msg
 subscriptions m = Sub.none

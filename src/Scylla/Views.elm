@@ -119,16 +119,19 @@ eventView m re =
             "m.room.message" -> Just messageView
             _ -> Nothing
         createRow mhtml = tr []
-            [ td [] [ eventSenderView re.sender ]
+            [ td [] [ eventSenderView m re.sender ]
             , td [] [ mhtml ]
             ]
     in
         Maybe.map createRow
             <| Maybe.andThen (\f -> f m re) viewFunction
 
-eventSenderView : String -> Html Msg
-eventSenderView s =
-    span [ style "background-color" <| stringColor s, class "sender-wrapper" ] [ text <| senderName s ]
+eventSenderView : Model -> String -> Html Msg
+eventSenderView m s =
+    let
+        displayName = Maybe.withDefault (senderName s) <| Maybe.andThen .displayName <| Dict.get s m.userData
+    in
+        span [ style "background-color" <| stringColor s, class "sender-wrapper" ] [ text displayName ]
 
 messageView : Model -> RoomEvent -> Maybe (Html Msg)
 messageView m re =

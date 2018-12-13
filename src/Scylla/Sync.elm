@@ -399,4 +399,4 @@ roomsUsers s =
         joinedUsers = usersFor .join
         leftUsers = usersFor .leave
     in
-        leftUsers ++ joinedUsers
+        uniqueBy (\u -> u) <| leftUsers ++ joinedUsers
