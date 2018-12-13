@@ -370,13 +370,17 @@ roomName jr =
         Maybe.andThen name <| Maybe.andThen nameEvent <| Maybe.andThen .events <| state
 
 -- Business Logic: Event Extraction
-notificationEvent : SyncResponse -> Maybe (String, RoomEvent)
-notificationEvent s =
+notificationText : RoomEvent -> String
+notificationText re = case (Decode.decodeValue (field "msgtype" string) re.content) of
+    Ok "m.text" -> Result.withDefault "" <| (Decode.decodeValue (field "body" string) re.content)
+    _ -> ""
+
+notificationEvents : SyncResponse -> List (String, RoomEvent)
+notificationEvents s =
     let
         applyPair k = List.map (\v -> (k, v))
     in
-        List.head
-        <| List.sortBy (\(k, v) -> v.originServerTs)
+        List.sortBy (\(k, v) -> v.originServerTs)
         <| Dict.foldl (\k v a -> a ++ applyPair k v) []
         <| joinedRoomsEvents s
 

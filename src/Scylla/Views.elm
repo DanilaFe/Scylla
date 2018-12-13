@@ -3,6 +3,7 @@ import Scylla.Model exposing (..)
 import Scylla.Sync exposing (..)
 import Scylla.Route exposing (..)
 import Scylla.Fnv as Fnv
+import Scylla.Login exposing (Username)
 import Svg
 import Svg.Attributes
 import Url.Builder
@@ -126,12 +127,9 @@ eventView m re =
         Maybe.map createRow
             <| Maybe.andThen (\f -> f m re) viewFunction
 
-eventSenderView : Model -> String -> Html Msg
+eventSenderView : Model -> Username -> Html Msg
 eventSenderView m s =
-    let
-        displayName = Maybe.withDefault (senderName s) <| Maybe.andThen .displayName <| Dict.get s m.userData
-    in
-        span [ style "background-color" <| stringColor s, class "sender-wrapper" ] [ text displayName ]
+    span [ style "background-color" <| stringColor s, class "sender-wrapper" ] [ text <| displayName m s ]
 
 messageView : Model -> RoomEvent -> Maybe (Html Msg)
 messageView m re =

@@ -1,6 +1,6 @@
 module Scylla.Model exposing (..)
 import Scylla.Api exposing (..)
-import Scylla.Sync exposing (SyncResponse, JoinedRoom)
+import Scylla.Sync exposing (SyncResponse, JoinedRoom, senderName)
 import Scylla.Login exposing (LoginResponse, Username, Password)
 import Scylla.UserData exposing (UserData)
 import Scylla.Route exposing (Route)
@@ -39,3 +39,5 @@ type Msg =
     | ReceiveLoginResponse (Result Http.Error LoginResponse) -- HTTP, Login has finished
     | ReceiveUserData Username (Result Http.Error UserData)
 
+displayName : Model -> Username -> String
+displayName m s = Maybe.withDefault (senderName s) <| Maybe.andThen .displayName <| Dict.get s m.userData

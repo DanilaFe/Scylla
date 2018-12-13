@@ -7,6 +7,7 @@ import Scylla.Http exposing (..)
 import Scylla.Views exposing (viewFull)
 import Scylla.Route exposing (Route(..))
 import Scylla.UserData exposing (..)
+import Scylla.Notification exposing (..)
 import Url exposing (Url)
 import Url.Parser exposing (parse)
 import Url.Builder
@@ -90,7 +91,7 @@ updateTryUrl m ur = case ur of
 
 updateLoginResponse : Model -> Result Http.Error LoginResponse -> (Model, Cmd Msg)
 updateLoginResponse model r = case r of
-    Ok lr -> ( { model | token = Just lr.accessToken } , Cmd.batch
+    Ok lr -> ( { model | token = Just lr.accessToken, loginUsername = lr.userId } , Cmd.batch
         [ firstSync model.apiUrl lr.accessToken
         , Nav.pushUrl model.key <| Url.Builder.absolute [] []
         ] )
@@ -104,10 +105,27 @@ updateSyncResponse model r notify =
             <| Result.map .nextBatch r
         syncCmd = sync nextBatch model.apiUrl token
         newUsers sr = List.filter (\s -> not <| Dict.member s model.userData) <| roomsUsers sr
-        newUserCommands sr = Cmd.batch <| List.map (userData model.apiUrl <| Maybe.withDefault "" model.token) <| newUsers sr
+        newUserCommands sr = Cmd.batch
+            <| List.map (userData model.apiUrl
+            <| Maybe.withDefault "" model.token)
+            <| newUsers sr
+        notification sr = List.head
+            <| List.filter (\(s, e) -> e.sender /= model.loginUsername)
+            <| notificationEvents sr
+        notificationCommand sr = Maybe.withDefault Cmd.none
+            <| Maybe.map (\(s, e) -> sendNotificationPort
+                { name = displayName model e.sender
+                , text = notificationText e
+                , room = s
+                })
+            <| notification sr
     in
         case r of
-            Ok sr -> ({ model | sync = mergeSyncResponse model.sync sr }, Cmd.batch [ syncCmd, newUserCommands sr ])
+            Ok sr -> ({ model | sync = mergeSyncResponse model.sync sr }, Cmd.batch
+                [ syncCmd
+                , newUserCommands sr
+                , if notify then notificationCommand sr else Cmd.none
+                ])
             _ -> (model, syncCmd)
 
 subscriptions : Model -> Sub Msg
