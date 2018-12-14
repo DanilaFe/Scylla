@@ -8,9 +8,9 @@ import Svg
 import Svg.Attributes
 import Url.Builder
 import Json.Decode as Decode
-import Html exposing (Html, div, input, text, button, div, span, a, h2, table, td, tr)
+import Html exposing (Html, Attribute, div, input, text, button, div, span, a, h2, table, td, tr)
 import Html.Attributes exposing (type_, value, href, class, style)
-import Html.Events exposing (onInput, onClick)
+import Html.Events exposing (onInput, onClick, on)
 import Dict
 
 stringColor : String -> String
@@ -114,6 +114,7 @@ joinedRoomView m roomId jr =
             [ input
                 [ type_ "text"
                 , onInput <| ChangeRoomText roomId
+                , onEnterKey <| SendRoomText roomId
                 , value <| Maybe.withDefault "" <| Dict.get roomId m.roomText
                 ]  []
             , button [ onClick <| SendRoomText roomId ] [ iconView "send" ]
@@ -125,6 +126,13 @@ joinedRoomView m roomId jr =
             , typingWrapper
             , messageInput
             ]
+
+onEnterKey : Msg -> Attribute Msg
+onEnterKey msg =
+    let
+        isEnter code = if code == 13 then Decode.succeed msg else Decode.fail "Not ENTER"
+    in
+        on "keydown" (Decode.andThen isEnter <| Decode.field "keyCode" Decode.int)
 
 iconView : String -> Html Msg
 iconView name =
