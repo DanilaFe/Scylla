@@ -269,6 +269,18 @@ uniqueByRecursive f l s = case l of
 uniqueBy : (a -> comparable) -> List a -> List a
 uniqueBy f l = uniqueByRecursive f l Set.empty
 
+findFirstBy : (a -> comparable) -> (a -> Bool) -> List a -> Maybe a
+findFirstBy sortFunction cond l = List.head <| List.sortBy sortFunction <| List.filter cond l
+
+findLastBy : (a -> comparable) -> (a -> Bool) -> List a -> Maybe a
+findLastBy sortFunction cond l = List.head <| List.reverse <| List.sortBy sortFunction <| List.filter cond l
+
+findFirstEvent : ({ a | originServerTs : Int } -> Bool) -> List { a | originServerTs : Int } -> Maybe { a | originServerTs : Int }
+findFirstEvent = findFirstBy .originServerTs
+
+findLastEvent : ({ a | originServerTs : Int } -> Bool) -> List { a | originServerTs : Int } -> Maybe { a | originServerTs : Int }
+findLastEvent = findLastBy .originServerTs
+
 -- Business Logic: Merging
 mergeMaybe : (a -> a -> a) -> Maybe a -> Maybe a -> Maybe a
 mergeMaybe f l r = case (l, r) of
@@ -368,7 +380,7 @@ roomName : JoinedRoom -> Maybe String
 roomName jr = 
     let
         state = jr.state
-        nameEvent = List.head << List.sortBy (\e -> -e.originServerTs) << List.filter (\e -> e.type_ == "m.room.name")
+        nameEvent = findLastEvent (((==) "m.room.name") << .type_)
         name e = Result.toMaybe <| Decode.decodeValue (field "name" string) e.content
     in
         Maybe.andThen name <| Maybe.andThen nameEvent <| Maybe.andThen .events <| state

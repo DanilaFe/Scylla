@@ -110,8 +110,9 @@ updateSyncResponse model r notify =
             <| List.map (userData model.apiUrl
             <| Maybe.withDefault "" model.token)
             <| newUsers sr
-        notification sr = List.head
-            <| List.filter (\(s, e) -> e.sender /= model.loginUsername)
+        notification sr = findFirstBy
+            (\(s, e) -> e.originServerTs)
+            (\(s, e) -> e.sender /= model.loginUsername)
             <| notificationEvents sr
         notificationCommand sr = Maybe.withDefault Cmd.none
             <| Maybe.map (\(s, e) -> sendNotificationPort
