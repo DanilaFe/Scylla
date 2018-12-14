@@ -127,6 +127,7 @@ div.room-wrapper {
  */
 div.message-wrapper {
     display: flex;
+    flex-shrink: 0;
 
     input {
         flex-grow: 9;   
