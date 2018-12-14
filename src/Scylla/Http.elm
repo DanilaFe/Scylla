@@ -7,15 +7,18 @@ import Scylla.UserData exposing (userDataDecoder, UserData)
 import Json.Encode exposing (object, string, int)
 import Http exposing (request, emptyBody, jsonBody, expectJson, expectWhatever)
 
-fullUrl : ApiUrl -> ApiUrl
-fullUrl s = s ++ "/_matrix/client/r0"
+fullClientUrl : ApiUrl -> ApiUrl
+fullClientUrl s = s ++ "/_matrix/client/r0"
+
+fullMediaUrl : ApiUrl -> ApiUrl
+fullMediaUrl s = s ++ "/_matrix/media/r0"
 
 -- Http Requests
 firstSync : ApiUrl -> ApiToken -> Cmd Msg
 firstSync apiUrl token = request
     { method = "GET"
     , headers = authenticatedHeaders token
-    , url = (fullUrl apiUrl) ++ "/sync"
+    , url = (fullClientUrl apiUrl) ++ "/sync"
     , body = emptyBody
     , expect = expectJson ReceiveFirstSyncResponse syncResponseDecoder
     , timeout = Nothing
@@ -26,7 +29,7 @@ sync : String -> ApiUrl -> ApiToken -> Cmd Msg
 sync nextBatch apiUrl token = request
     { method = "GET"
     , headers = authenticatedHeaders token
-    , url = (fullUrl apiUrl) ++ "/sync" ++ "?since=" ++ (nextBatch) ++ "&timeout=10000"
+    , url = (fullClientUrl apiUrl) ++ "/sync" ++ "?since=" ++ (nextBatch) ++ "&timeout=10000"
     , body = emptyBody
     , expect = expectJson ReceiveSyncResponse syncResponseDecoder
     , timeout = Nothing
@@ -37,7 +40,7 @@ sendTextMessage : ApiUrl -> ApiToken -> Int -> String -> String -> Cmd Msg
 sendTextMessage apiUrl token transactionId room message = request
     { method = "PUT"
     , headers = authenticatedHeaders token
-    , url = (fullUrl apiUrl)
+    , url = (fullClientUrl apiUrl)
         ++ "/rooms/" ++ room
         ++ "/send/" ++ "m.room.message"
         ++ "/" ++ (String.fromInt transactionId)
@@ -54,7 +57,7 @@ login : ApiUrl -> Username -> Password -> Cmd Msg
 login apiUrl username password = request
     { method = "POST"
     , headers = basicHeaders
-    , url = (fullUrl apiUrl) ++ "/login"
+    , url = (fullClientUrl apiUrl) ++ "/login"
     , body = jsonBody <| object
         [ ("type", string "m.login.password")
         , ("identifier", object
@@ -72,7 +75,7 @@ userData : ApiUrl -> ApiToken -> Username -> Cmd Msg
 userData apiUrl token username = request
     { method = "GET"
     , headers = authenticatedHeaders token
-    , url = (fullUrl apiUrl) ++ "/profile/" ++ username
+    , url = (fullClientUrl apiUrl) ++ "/profile/" ++ username
     , body = emptyBody
     , expect = expectJson (ReceiveUserData username) userDataDecoder
     , timeout = Nothing

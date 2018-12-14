@@ -4,14 +4,26 @@ import Scylla.Sync exposing (..)
 import Scylla.Route exposing (..)
 import Scylla.Fnv as Fnv
 import Scylla.Login exposing (Username)
+import Scylla.Http exposing (fullMediaUrl)
+import Scylla.Api exposing (ApiUrl)
 import Svg
 import Svg.Attributes
 import Url.Builder
 import Json.Decode as Decode
-import Html exposing (Html, Attribute, div, input, text, button, div, span, a, h2, table, td, tr)
-import Html.Attributes exposing (type_, value, href, class, style)
+import Html exposing (Html, Attribute, div, input, text, button, div, span, a, h2, table, td, tr, img)
+import Html.Attributes exposing (type_, value, href, class, style, src)
 import Html.Events exposing (onInput, onClick, on)
 import Dict
+
+contentRepositoryDownloadUrl : ApiUrl -> String -> String
+contentRepositoryDownloadUrl apiUrl s =
+    let
+        lastIndex = Maybe.withDefault 6 <| List.head <| List.reverse <| String.indexes "/" s
+        authority = String.slice 6 lastIndex s
+        content = String.dropLeft (lastIndex + 1) s
+    in
+        (fullMediaUrl apiUrl) ++ "/download/" ++ authority ++ "/" ++ content
+
 
 stringColor : String -> String
 stringColor s = 
@@ -171,6 +183,7 @@ messageView m re =
     in
         case msgtype of
             Ok "m.text" -> messageTextView m re
+            Ok "m.image" -> messageImageView m re
             _ -> Nothing
 
 messageTextView : Model -> RoomEvent -> Maybe (Html Msg)
@@ -180,3 +193,12 @@ messageTextView m re =
         wrap mtext = span [] [ text mtext ]
     in
         Maybe.map wrap <| Result.toMaybe body
+
+messageImageView : Model -> RoomEvent -> Maybe (Html Msg)
+messageImageView m re =
+    let
+        body = Decode.decodeValue (Decode.field "url" Decode.string) re.content
+    in
+        Maybe.map (\s -> img [ class "message-image", src s ] [])
+            <| Maybe.map (contentRepositoryDownloadUrl m.apiUrl)
+            <| Result.toMaybe body

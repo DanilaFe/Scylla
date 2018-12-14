@@ -155,6 +155,11 @@ table.events-table {
         vertical-align: top;
     }
 
+    img {
+        max-width: 90%;
+        max-height: 400px;
+    }
+
     td:nth-child(1) {
         width: 10%;
         max-width: 100px;
