@@ -1,5 +1,6 @@
 import Browser exposing (application, UrlRequest(..))
 import Browser.Navigation as Nav
+import Browser.Dom exposing (Viewport, setViewportOf)
 import Scylla.Sync exposing (..)
 import Scylla.Login exposing (..)
 import Scylla.Model exposing (..)
@@ -14,6 +15,7 @@ import Url.Builder
 import Html exposing (div, text)
 import Http
 import Dict
+import Task
 
 type alias Flags =
     { token : Maybe String
@@ -61,6 +63,8 @@ update msg model = case msg of
     TryUrl urlRequest -> updateTryUrl model urlRequest
     OpenRoom s -> (model, Nav.pushUrl model.key <| roomUrl s)
     ChangeRoute r -> ({ model | route = r }, Cmd.none)
+    ViewportAfterMessage v -> updateViewportAfterMessage model v
+    ViewportChangeComplete _ -> (model, Cmd.none)
     ReceiveLoginResponse r -> updateLoginResponse model r
     ReceiveFirstSyncResponse r -> updateSyncResponse model r False
     ReceiveSyncResponse r -> updateSyncResponse model r True
@@ -68,6 +72,15 @@ update msg model = case msg of
     ChangeRoomText r t -> ({ model | roomText = Dict.insert r t model.roomText}, Cmd.none)
     SendRoomText r -> updateSendRoomText model r
     SendRoomTextResponse r -> (model, Cmd.none)
+
+updateViewportAfterMessage : Model -> Result Browser.Dom.Error Viewport -> (Model, Cmd Msg)
+updateViewportAfterMessage m vr = 
+    let
+        cmd vp = if vp.scene.height - (vp.viewport.y + vp.viewport.height ) < 100
+            then Task.attempt ViewportChangeComplete <| setViewportOf "events-wrapper" vp.viewport.x vp.scene.height
+            else Cmd.none
+    in
+        (m, Result.withDefault Cmd.none <| Result.map cmd vr)
 
 updateUserData : Model -> String -> Result Http.Error UserData -> (Model, Cmd Msg)
 updateUserData m s r = case r of
@@ -121,12 +134,23 @@ updateSyncResponse model r notify =
                 , room = s
                 })
             <| notification sr
+        roomMessages sr = case currentRoomId model of
+            Just rid -> List.filter (((==) "m.room.message") << .type_)
+                <| Maybe.withDefault []
+                <| Maybe.andThen .events
+                <| Maybe.andThen .timeline
+                <| Maybe.andThen (Dict.get rid)
+                <| Maybe.andThen .join
+                <| sr.rooms
+            Nothing -> []
+        setScrollCommand sr = if List.isEmpty <| roomMessages sr then Cmd.none else Task.attempt ViewportAfterMessage (Browser.Dom.getViewportOf "events-wrapper")
     in
         case r of
             Ok sr -> ({ model | sync = mergeSyncResponse model.sync sr }, Cmd.batch
                 [ syncCmd
                 , newUserCommands sr
                 , if notify then notificationCommand sr else Cmd.none
+                , setScrollCommand sr
                 ])
             _ -> (model, syncCmd)
 

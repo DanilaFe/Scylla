@@ -11,7 +11,7 @@ import Svg.Attributes
 import Url.Builder
 import Json.Decode as Decode
 import Html exposing (Html, Attribute, div, input, text, button, div, span, a, h2, table, td, tr, img)
-import Html.Attributes exposing (type_, value, href, class, style, src)
+import Html.Attributes exposing (type_, value, href, class, style, src, id)
 import Html.Events exposing (onInput, onClick, on)
 import Dict
 
@@ -156,7 +156,7 @@ iconView name =
             ] [ Svg.use [ Svg.Attributes.xlinkHref (url ++ "#" ++ name) ] [] ]
 
 eventWrapperView : Model -> List (Html Msg) -> Html Msg
-eventWrapperView m es = div [ class "events-wrapper" ] [ table [ class "events-table" ] es ]
+eventWrapperView m es = div [ class "events-wrapper", id "events-wrapper" ] [ table [ class "events-table" ] es ]
 
 eventView : Model -> RoomEvent -> Maybe (Html Msg)
 eventView m re = 

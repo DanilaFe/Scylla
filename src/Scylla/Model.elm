@@ -3,8 +3,9 @@ import Scylla.Api exposing (..)
 import Scylla.Sync exposing (SyncResponse, JoinedRoom, senderName)
 import Scylla.Login exposing (LoginResponse, Username, Password)
 import Scylla.UserData exposing (UserData)
-import Scylla.Route exposing (Route)
+import Scylla.Route exposing (Route(..), RoomId)
 import Browser.Navigation as Nav
+import Browser.Dom exposing (Viewport)
 import Url.Builder
 import Dict exposing (Dict)
 import Browser
@@ -36,6 +37,8 @@ type Msg =
     | ChangeRoomText String String -- Change to a room's input text
     | SendRoomText String -- Sends a message typed into a given room's input
     | SendRoomTextResponse (Result Http.Error ()) -- A send message response finished
+    | ViewportAfterMessage (Result Browser.Dom.Error Viewport) -- A message has been received, try scroll (maybe)
+    | ViewportChangeComplete (Result Browser.Dom.Error ()) -- We're done changing the viewport.
     | ReceiveFirstSyncResponse (Result Http.Error SyncResponse) -- HTTP, Sync has finished
     | ReceiveSyncResponse (Result Http.Error SyncResponse) -- HTTP, Sync has finished
     | ReceiveLoginResponse (Result Http.Error LoginResponse) -- HTTP, Login has finished
@@ -49,3 +52,15 @@ roomUrl s = Url.Builder.absolute [ "room", s ] []
 
 loginUrl : String
 loginUrl = Url.Builder.absolute [ "login" ] []
+
+currentRoom : Model -> Maybe JoinedRoom
+currentRoom m =
+    let
+        roomDict = Maybe.withDefault Dict.empty <| Maybe.andThen .join <| m.sync.rooms
+    in
+        Maybe.andThen (\s -> Dict.get s roomDict) <| currentRoomId m
+
+currentRoomId : Model -> Maybe RoomId
+currentRoomId m = case m.route of
+    Room r -> Just r
+    _ -> Nothing
