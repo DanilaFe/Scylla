@@ -269,11 +269,19 @@ uniqueByRecursive f l s = case l of
 uniqueBy : (a -> comparable) -> List a -> List a
 uniqueBy f l = uniqueByRecursive f l Set.empty
 
+findFirst : (a -> Bool) -> List a -> Maybe a
+findFirst cond l = case l of
+    x::xs -> if cond x then Just x else findFirst cond xs
+    [] -> Nothing
+
+findLast : (a -> Bool) -> List a -> Maybe a
+findLast cond l = findFirst cond <| List.reverse l
+
 findFirstBy : (a -> comparable) -> (a -> Bool) -> List a -> Maybe a
-findFirstBy sortFunction cond l = List.head <| List.sortBy sortFunction <| List.filter cond l
+findFirstBy sortFunction cond l = findFirst cond <| List.sortBy sortFunction l
 
 findLastBy : (a -> comparable) -> (a -> Bool) -> List a -> Maybe a
-findLastBy sortFunction cond l = List.head <| List.reverse <| List.sortBy sortFunction <| List.filter cond l
+findLastBy sortFunction cond l = findLast cond <| List.sortBy sortFunction l
 
 findFirstEvent : ({ a | originServerTs : Int } -> Bool) -> List { a | originServerTs : Int } -> Maybe { a | originServerTs : Int }
 findFirstEvent = findFirstBy .originServerTs
@@ -407,6 +415,13 @@ joinedRoomsEvents s =
     <| Maybe.andThen .join s.rooms
 
 -- Business Logic: User Extraction
+roomTypingUsers : JoinedRoom -> List Username
+roomTypingUsers jr = Maybe.withDefault []
+    <| Maybe.andThen (Result.toMaybe << Decode.decodeValue (Decode.field "user_ids" (list string)))
+    <| Maybe.map .content
+    <| Maybe.andThen (findLast (((==) "m.typing") << .type_))
+    <| Maybe.andThen .events jr.ephemeral
+
 roomsUsers : SyncResponse -> List Username
 roomsUsers s =
     let

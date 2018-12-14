@@ -86,6 +86,13 @@ joinedRoomView m roomId jr =
         events = Maybe.withDefault [] <| Maybe.andThen .events jr.timeline
         renderedEvents = List.filterMap (eventView m) events
         eventWrapper = eventWrapperView m renderedEvents
+        typing = List.map (displayName m) <| roomTypingUsers jr
+        typingText = String.join ", " typing
+        typingSuffix = case List.length typing of
+            0 -> ""
+            1 -> " is typing..."
+            _ -> " are typing..."
+        typingWrapper = div [ class "typing-wrapper" ] [ text <| typingText ++ typingSuffix ] 
         messageInput = div [ class "message-wrapper" ]
             [ input
                 [ type_ "text"
@@ -98,6 +105,7 @@ joinedRoomView m roomId jr =
         div [ class "room-wrapper" ]
             [ h2 [] [ text <| Maybe.withDefault "<No Name>" <| roomName jr ]
             , eventWrapper
+            , typingWrapper
             , messageInput
             ]
 
