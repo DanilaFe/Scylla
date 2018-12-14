@@ -89,7 +89,7 @@ div.base-wrapper {
     display: flex;
     height: 100%;
 
-    div {
+    > div {
         padding: 5px;
         box-sizing: border-box;
     }
@@ -100,9 +100,15 @@ div.base-wrapper {
  */
 div.rooms-wrapper {
     flex-shrink: 0;
+}
 
-    a {
-        display: block;
+div.room-link-wrapper {
+    whitespace: nowrap;
+    display: flex;
+    padding: 0px;
+
+    span, a {
+        margin-right: 5px;
     }
 }
 

@@ -69,7 +69,24 @@ roomListElementView s jr =
     let
         name = Maybe.withDefault "<No Name>"  <| roomName jr
     in
-        a [ href <| roomUrl s ] [ text name ]
+        div [ class "room-link-wrapper" ]
+            [ a [ href <| roomUrl s ] [ text name ]
+            , roomNotificationCountView jr.unreadNotifications
+            ]
+
+roomNotificationCountView : Maybe UnreadNotificationCounts -> Html Msg
+roomNotificationCountView ns =
+    let
+        spanNumber = case Maybe.andThen .notificationCount ns of
+            Nothing -> ""
+            Just 0 -> ""
+            Just i -> String.fromInt i
+        spanSuffix = case Maybe.andThen .highlightCount ns of
+            Nothing -> ""
+            Just 0 -> ""
+            Just i -> "!"
+    in
+        span [ class "notification-count" ] [ text (spanNumber ++ spanSuffix) ]
 
 loginView : Model -> Html Msg
 loginView m = div [ class "login-wrapper" ]
