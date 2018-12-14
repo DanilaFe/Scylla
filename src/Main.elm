@@ -119,7 +119,7 @@ updateSyncResponse model r notify =
             <| Result.map .nextBatch r
         syncCmd = sync nextBatch model.apiUrl token
         newUsers sr = List.filter (\s -> not <| Dict.member s model.userData) <| roomsUsers sr
-        newUserCommands sr = Cmd.batch
+        newUserCmd sr = Cmd.batch
             <| List.map (userData model.apiUrl
             <| Maybe.withDefault "" model.token)
             <| newUsers sr
@@ -127,13 +127,14 @@ updateSyncResponse model r notify =
             (\(s, e) -> e.originServerTs)
             (\(s, e) -> e.sender /= model.loginUsername)
             <| notificationEvents sr
-        notificationCommand sr = Maybe.withDefault Cmd.none
-            <| Maybe.map (\(s, e) -> sendNotificationPort
-                { name = displayName model e.sender
-                , text = notificationText e
-                , room = s
-                })
-            <| notification sr
+        notificationCmd sr = if notify
+            then Maybe.withDefault Cmd.none
+                    <| Maybe.map (\(s, e) -> sendNotificationPort
+                    { name = displayName model e.sender
+                    , text = notificationText e
+                    , room = s
+                    }) <| notification sr
+            else Cmd.none
         roomMessages sr = case currentRoomId model of
             Just rid -> List.filter (((==) "m.room.message") << .type_)
                 <| Maybe.withDefault []
@@ -143,14 +144,17 @@ updateSyncResponse model r notify =
                 <| Maybe.andThen .join
                 <| sr.rooms
             Nothing -> []
-        setScrollCommand sr = if List.isEmpty <| roomMessages sr then Cmd.none else Task.attempt ViewportAfterMessage (Browser.Dom.getViewportOf "events-wrapper")
+        setScrollCmd sr = if List.isEmpty 
+            <| roomMessages sr
+                then Cmd.none
+                else Task.attempt ViewportAfterMessage (Browser.Dom.getViewportOf "events-wrapper")
     in
         case r of
             Ok sr -> ({ model | sync = mergeSyncResponse model.sync sr }, Cmd.batch
                 [ syncCmd
-                , newUserCommands sr
-                , if notify then notificationCommand sr else Cmd.none
-                , setScrollCommand sr
+                , newUserCmd sr
+                , notificationCmd sr
+                , setScrollCmd sr
                 ])
             _ -> (model, syncCmd)
 
