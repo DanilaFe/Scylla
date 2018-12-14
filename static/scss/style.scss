@@ -147,6 +147,7 @@ div.events-wrapper {
 table.events-table {
     border-collapse: collapse;
     width: 100%;
+    table-layout: fixed;
 
     td {
         padding: 5px;
@@ -154,7 +155,8 @@ table.events-table {
     }
 
     td:nth-child(1) {
-        width: 0px;
+        width: 10%;
+        max-width: 100px;
         white-space: nowrap;
     }
 
@@ -171,8 +173,9 @@ span.sender-wrapper {
     box-sizing: border-box;
     text-align: center;
     width: 100%;
-    max-width: 100px;
     text-overflow: ellipsis;
+    overflow: hidden;
+    vertical-align: bottom; /* Fix for overflow changing element height */
 }
 
 /**
