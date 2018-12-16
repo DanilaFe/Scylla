@@ -62,7 +62,7 @@ update msg model = case msg of
     AttemptLogin -> (model, Scylla.Http.login model.apiUrl model.loginUsername model.loginPassword) -- TODO 
     TryUrl urlRequest -> updateTryUrl model urlRequest
     OpenRoom s -> (model, Nav.pushUrl model.key <| roomUrl s)
-    ChangeRoute r -> ({ model | route = r }, Cmd.none)
+    ChangeRoute r -> updateChangeRoute model r
     ViewportAfterMessage v -> updateViewportAfterMessage model v
     ViewportChangeComplete _ -> (model, Cmd.none)
     ReceiveLoginResponse r -> updateLoginResponse model r
@@ -73,6 +73,19 @@ update msg model = case msg of
     SendRoomText r -> updateSendRoomText model r
     SendRoomTextResponse r -> (model, Cmd.none)
     ReceiveCompletedReadMarker r -> (model, Cmd.none)
+
+updateChangeRoute : Model -> Route -> (Model, Cmd Msg)
+updateChangeRoute m r =
+    let
+        joinedRoom = case r of
+            Room rid -> Maybe.andThen (Dict.get rid) <| Maybe.andThen .join <| m.sync.rooms
+            _ -> Nothing
+        lastMessage = Maybe.andThen (findLastEvent (((==) "m.room.message") << .type_)) <| Maybe.andThen .events <| Maybe.andThen .timeline joinedRoom
+        readMarkerCmd = case (r, lastMessage) of
+            (Room rid, Just re) -> setReadMarkers m.apiUrl (Maybe.withDefault "" m.token) rid re.eventId <| Just re.eventId
+            _ -> Cmd.none
+    in
+        ({ m | route = r }, readMarkerCmd)
 
 updateViewportAfterMessage : Model -> Result Browser.Dom.Error Viewport -> (Model, Cmd Msg)
 updateViewportAfterMessage m vr = 
