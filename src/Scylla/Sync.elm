@@ -387,11 +387,16 @@ senderName s =
 roomName : JoinedRoom -> Maybe String
 roomName jr = 
     let
-        state = jr.state
-        nameEvent = findLastEvent (((==) "m.room.name") << .type_)
-        name e = Result.toMaybe <| Decode.decodeValue (field "name" string) e.content
+        nameEvent = Maybe.andThen (findLastEvent (((==) "m.room.name") << .type_))
+            << Maybe.andThen .events
+        name c = Result.toMaybe <| Decode.decodeValue (field "name" string) c
+        maybeStateEvent = nameEvent jr.state
+        maybeTimelineEvent = nameEvent jr.timeline
+        realEventContent = case maybeTimelineEvent of
+            Just te -> Just te.content
+            _ -> Maybe.map .content maybeStateEvent
     in
-        Maybe.andThen name <| Maybe.andThen nameEvent <| Maybe.andThen .events <| state
+        Maybe.andThen name realEventContent
 
 -- Business Logic: Event Extraction
 notificationText : RoomEvent -> String
