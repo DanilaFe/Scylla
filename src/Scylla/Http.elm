@@ -1,6 +1,7 @@
 module Scylla.Http exposing (..)
 import Scylla.Model exposing (..)
 import Scylla.Api exposing (..)
+import Scylla.Route exposing (RoomId)
 import Scylla.Sync exposing (syncResponseDecoder)
 import Scylla.Login exposing (loginResponseDecoder, Username, Password)
 import Scylla.UserData exposing (userDataDecoder, UserData)
@@ -81,3 +82,20 @@ userData apiUrl token username = request
     , timeout = Nothing
     , tracker = Nothing
     }
+
+setReadMarkers : ApiUrl -> ApiToken -> String -> RoomId -> Maybe String -> Cmd Msg
+setReadMarkers apiUrl token roomId fullyRead readReceipt =
+    let
+        readReciptFields = case readReceipt of
+            Just s -> [ ("m.read", string s) ]
+            _ -> []
+    in
+        request
+            { method = "POST"
+            , headers = authenticatedHeaders token
+            , url = (fullClientUrl apiUrl) ++ "/rooms/" ++ roomId ++ "/read_markers"
+            , body = jsonBody <| object <| [ ("m.fully_read", string fullyRead) ] ++ readReciptFields
+            , expect = expectWhatever ReceiveCompletedReadMarker
+            , timeout = Nothing
+            , tracker = Nothing
+            }

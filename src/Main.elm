@@ -72,6 +72,7 @@ update msg model = case msg of
     ChangeRoomText r t -> ({ model | roomText = Dict.insert r t model.roomText}, Cmd.none)
     SendRoomText r -> updateSendRoomText model r
     SendRoomTextResponse r -> (model, Cmd.none)
+    ReceiveCompletedReadMarker r -> (model, Cmd.none)
 
 updateViewportAfterMessage : Model -> Result Browser.Dom.Error Viewport -> (Model, Cmd Msg)
 updateViewportAfterMessage m vr = 
@@ -135,7 +136,8 @@ updateSyncResponse model r notify =
                     , room = s
                     }) <| notification sr
             else Cmd.none
-        roomMessages sr = case currentRoomId model of
+        room = currentRoomId model
+        roomMessages sr = case room of
             Just rid -> List.filter (((==) "m.room.message") << .type_)
                 <| Maybe.withDefault []
                 <| Maybe.andThen .events
@@ -148,6 +150,9 @@ updateSyncResponse model r notify =
             <| roomMessages sr
                 then Cmd.none
                 else Task.attempt ViewportAfterMessage (Browser.Dom.getViewportOf "events-wrapper")
+        setReadReceiptCmd sr = case (room, List.head <| List.reverse <| roomMessages sr) of
+            (Just rid, Just re) -> setReadMarkers model.apiUrl token rid re.eventId <| Just re.eventId
+            _ -> Cmd.none
     in
         case r of
             Ok sr -> ({ model | sync = mergeSyncResponse model.sync sr }, Cmd.batch
@@ -155,6 +160,7 @@ updateSyncResponse model r notify =
                 , newUserCmd sr
                 , notificationCmd sr
                 , setScrollCmd sr
+                , setReadReceiptCmd sr
                 ])
             _ -> (model, syncCmd)
 

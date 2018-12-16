@@ -43,6 +43,7 @@ type Msg =
     | ReceiveSyncResponse (Result Http.Error SyncResponse) -- HTTP, Sync has finished
     | ReceiveLoginResponse (Result Http.Error LoginResponse) -- HTTP, Login has finished
     | ReceiveUserData Username (Result Http.Error UserData)
+    | ReceiveCompletedReadMarker (Result Http.Error ())
 
 displayName : Model -> Username -> String
 displayName m s = Maybe.withDefault (senderName s) <| Maybe.andThen .displayName <| Dict.get s m.userData
