@@ -9,9 +9,11 @@ import Scylla.Views exposing (viewFull)
 import Scylla.Route exposing (Route(..))
 import Scylla.UserData exposing (..)
 import Scylla.Notification exposing (..)
+import Scylla.Storage exposing (..)
 import Url exposing (Url)
 import Url.Parser exposing (parse)
 import Url.Builder
+import Json.Encode
 import Html exposing (div, text)
 import Http
 import Dict
@@ -122,6 +124,7 @@ updateLoginResponse model r = case r of
     Ok lr -> ( { model | token = Just lr.accessToken, loginUsername = lr.userId } , Cmd.batch
         [ firstSync model.apiUrl lr.accessToken
         , Nav.pushUrl model.key <| Url.Builder.absolute [] []
+        , setStoreValuePort ("scylla.loginInfo", Json.Encode.string (lr.accessToken ++ "\n" ++ model.apiUrl))
         ] )
     Err e  -> (model, Cmd.none)
 
