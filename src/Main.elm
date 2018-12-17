@@ -3,6 +3,7 @@ import Browser.Navigation as Nav
 import Browser.Dom exposing (Viewport, setViewportOf)
 import Scylla.Sync exposing (..)
 import Scylla.Login exposing (..)
+import Scylla.Api exposing (..)
 import Scylla.Model exposing (..)
 import Scylla.Http exposing (..)
 import Scylla.Views exposing (viewFull)
@@ -67,7 +68,7 @@ update msg model = case msg of
     ChangeRoute r -> updateChangeRoute model r
     ViewportAfterMessage v -> updateViewportAfterMessage model v
     ViewportChangeComplete _ -> (model, Cmd.none)
-    ReceiveLoginResponse r -> updateLoginResponse model r
+    ReceiveLoginResponse a r -> updateLoginResponse model a r
     ReceiveFirstSyncResponse r -> updateSyncResponse model r False
     ReceiveSyncResponse r -> updateSyncResponse model r True
     ReceiveUserData s r -> updateUserData model s r
@@ -119,9 +120,9 @@ updateTryUrl m ur = case ur of
     Internal u -> (m, Nav.pushUrl m.key (Url.toString u))
     _ -> (m, Cmd.none)
 
-updateLoginResponse : Model -> Result Http.Error LoginResponse -> (Model, Cmd Msg)
-updateLoginResponse model r = case r of
-    Ok lr -> ( { model | token = Just lr.accessToken, loginUsername = lr.userId } , Cmd.batch
+updateLoginResponse : Model -> ApiUrl -> Result Http.Error LoginResponse -> (Model, Cmd Msg)
+updateLoginResponse model a r = case r of
+    Ok lr -> ( { model | token = Just lr.accessToken, loginUsername = lr.userId, apiUrl = a }, Cmd.batch
         [ firstSync model.apiUrl lr.accessToken
         , Nav.pushUrl model.key <| Url.Builder.absolute [] []
         , setStoreValuePort ("scylla.loginInfo", Json.Encode.string (lr.accessToken ++ "\n" ++ model.apiUrl))

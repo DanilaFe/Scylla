@@ -41,7 +41,7 @@ type Msg =
     | ViewportChangeComplete (Result Browser.Dom.Error ()) -- We're done changing the viewport.
     | ReceiveFirstSyncResponse (Result Http.Error SyncResponse) -- HTTP, Sync has finished
     | ReceiveSyncResponse (Result Http.Error SyncResponse) -- HTTP, Sync has finished
-    | ReceiveLoginResponse (Result Http.Error LoginResponse) -- HTTP, Login has finished
+    | ReceiveLoginResponse ApiUrl (Result Http.Error LoginResponse) -- HTTP, Login has finished
     | ReceiveUserData Username (Result Http.Error UserData)
     | ReceiveCompletedReadMarker (Result Http.Error ())
 

@@ -67,7 +67,7 @@ login apiUrl username password = request
             ] )
         , ("password", string password)
         ]
-    , expect = expectJson ReceiveLoginResponse loginResponseDecoder
+    , expect = expectJson (ReceiveLoginResponse apiUrl) loginResponseDecoder
     , timeout = Nothing
     , tracker = Nothing
     }
