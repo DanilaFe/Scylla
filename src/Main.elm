@@ -125,7 +125,7 @@ updateLoginResponse model a r = case r of
     Ok lr -> ( { model | token = Just lr.accessToken, loginUsername = lr.userId, apiUrl = a }, Cmd.batch
         [ firstSync model.apiUrl lr.accessToken
         , Nav.pushUrl model.key <| Url.Builder.absolute [] []
-        , setStoreValuePort ("scylla.loginInfo", Json.Encode.string (lr.accessToken ++ "\n" ++ model.apiUrl))
+        , setStoreValuePort ("scylla.loginInfo", encodeLoginInfo (lr.accessToken, model.apiUrl, lr.userId))
         ] )
     Err e  -> (model, Cmd.none)
 
