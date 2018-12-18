@@ -25,17 +25,13 @@ import Task
 syncTimeout = 10000
 typingTimeout = 2000
 
-type alias Flags =
-    { token : Maybe String
-    }
-
-init : Flags -> Url -> Nav.Key -> (Model, Cmd Msg)
-init flags url key =
+init : () -> Url -> Nav.Key -> (Model, Cmd Msg)
+init _ url key =
     let
         model =
             { key = key
             , route = Maybe.withDefault Unknown <| parse Scylla.Route.route url
-            , token = flags.token
+            , token = Nothing
             , loginUsername = ""
             , loginPassword = ""
             , apiUrl = "https://matrix.org"
@@ -50,9 +46,7 @@ init flags url key =
             , transactionId = 0
             , userData = Dict.empty
             }
-        cmd = case flags.token of
-            Just _ -> Cmd.none
-            Nothing -> getStoreValuePort "scylla.loginInfo"
+        cmd = getStoreValuePort "scylla.loginInfo"
     in
         (model, cmd)
 
