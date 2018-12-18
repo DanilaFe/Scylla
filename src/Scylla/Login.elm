@@ -7,18 +7,24 @@ import Json.Encode as Encode
 type alias Username = String
 type alias Password = String
 
-type alias LoginInfo = (ApiToken, ApiUrl, Username)
+type alias LoginInfo =
+    { token : ApiToken
+    , apiUrl : ApiUrl
+    , username : Username
+    , transactionId : Int
+    }
 
 encodeLoginInfo : LoginInfo -> String
-encodeLoginInfo (t,a,u) = t ++ "," ++ a ++ "," ++ u
+encodeLoginInfo {token, apiUrl, username, transactionId} =
+    token ++ "," ++ apiUrl ++ "," ++ username ++ "," ++ (String.fromInt transactionId)
 
 decodeLoginInfo : String -> Maybe LoginInfo
 decodeLoginInfo s = case String.indexes "," s of
-    [ fst, snd ] -> Just
-        ( (String.slice 0 fst s)
-        , (String.slice (fst + 1) snd s)
-        , (String.dropLeft (snd + 1) s)
-        )
+    [ fst, snd, thd ] -> Just <| LoginInfo
+        (String.slice 0 fst s)
+        (String.slice (fst + 1) snd s)
+        (String.slice (snd + 1) thd s)
+        (Maybe.withDefault 0 <| String.toInt <| String.dropLeft (thd + 1) s)
     _ -> Nothing
 
 type alias LoginResponse =

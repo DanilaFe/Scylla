@@ -92,6 +92,7 @@ updateChangeRoomText m roomId text =
         typingIndicator = case (text, Dict.get roomId m.roomText) of
             ("", _) -> Just False
             (_, Just "") -> Just True
+            (_, Nothing) -> Just True
             _ -> Nothing
         command = case typingIndicator of
             Just b -> sendTypingIndicator m.apiUrl (Maybe.withDefault "" m.token) roomId m.loginUsername b typingTimeout
@@ -118,7 +119,15 @@ updateStoreData m d = case (Json.Decode.decodeValue storeDataDecoder d) of
 
 updateLoginInfo : Model -> Json.Encode.Value -> (Model, Cmd Msg)
 updateLoginInfo m s = case Json.Decode.decodeValue (Json.Decode.map decodeLoginInfo Json.Decode.string) s of
-    Ok (Just (t,a,u)) -> ({ m | token = Just t, apiUrl = a, loginUsername = u}, firstSync a t)
+    Ok (Just { token, apiUrl, username, transactionId }) ->
+        (
+            { m | token = Just token
+            , apiUrl = apiUrl
+            , loginUsername = username
+            , transactionId = transactionId
+            }
+        , firstSync apiUrl token
+        )
     _ -> (m, Nav.pushUrl m.key <| Url.Builder.absolute [ "login" ] [])
 
 updateChangeRoute : Model -> Route -> (Model, Cmd Msg)
@@ -148,16 +157,23 @@ updateUserData m s r = case r of
     Ok ud -> ({ m | userData = Dict.insert s ud m.userData }, Cmd.none)
     Err e -> (m, userData m.apiUrl (Maybe.withDefault "" m.token) s)
 
-updateSendRoomText : Model -> String -> (Model, Cmd Msg)
+updateSendRoomText : Model -> RoomId -> (Model, Cmd Msg)
 updateSendRoomText m r =
     let
         token = Maybe.withDefault "" m.token
         message = Maybe.andThen (\s -> if s == "" then Nothing else Just s)
             <| Dict.get r m.roomText
-        command = Maybe.withDefault Cmd.none
-            <| Maybe.map (sendTextMessage m.apiUrl token m.transactionId r) message
+        combinedCmd = case message of
+            Nothing -> Cmd.none
+            Just s -> Cmd.batch
+                [ sendTextMessage m.apiUrl token m.transactionId r s
+                , sendTypingIndicator m.apiUrl token r m.loginUsername False typingTimeout
+                , setStoreValuePort ("scylla.loginInfo", Json.Encode.string
+                    <| encodeLoginInfo
+                    <| LoginInfo (Maybe.withDefault "" m.token) m.apiUrl m.loginUsername (m.transactionId + 1))
+                ]
     in
-        ({ m | roomText = Dict.insert r "" m.roomText, transactionId = m.transactionId + 1 }, command)
+        ({ m | roomText = Dict.insert r "" m.roomText, transactionId = m.transactionId + 1 }, combinedCmd)
 
 updateTryUrl : Model -> Browser.UrlRequest -> (Model, Cmd Msg)
 updateTryUrl m ur = case ur of
@@ -169,7 +185,9 @@ updateLoginResponse model a r = case r of
     Ok lr -> ( { model | token = Just lr.accessToken, loginUsername = lr.userId, apiUrl = a }, Cmd.batch
         [ firstSync model.apiUrl lr.accessToken
         , Nav.pushUrl model.key <| Url.Builder.absolute [] []
-        , setStoreValuePort ("scylla.loginInfo", Json.Encode.string <| encodeLoginInfo (lr.accessToken, model.apiUrl, lr.userId))
+        , setStoreValuePort ("scylla.loginInfo", Json.Encode.string
+            <| encodeLoginInfo 
+            <| LoginInfo lr.accessToken model.apiUrl lr.userId model.transactionId)
         ] )
     Err e  -> (model, Cmd.none)
 
@@ -228,7 +246,10 @@ updateSyncResponse model r notify =
 subscriptions : Model -> Sub Msg
 subscriptions m =
     let
-        typingTimer = case Maybe.withDefault "" <| Maybe.andThen (\rid -> Dict.get rid m.roomText) <| currentRoomId m of
+        currentText = Maybe.withDefault ""
+            <| Maybe.andThen (\rid -> Dict.get rid m.roomText)
+            <| currentRoomId m
+        typingTimer = case currentText of
             "" -> Sub.none
             _ -> every typingTimeout TypingTick
     in
