@@ -9,6 +9,7 @@ import Browser.Navigation as Nav
 import Browser.Dom exposing (Viewport)
 import Url.Builder
 import Dict exposing (Dict)
+import Time exposing (Posix)
 import Json.Decode
 import Browser
 import Http
@@ -44,10 +45,11 @@ type Msg =
     | ReceiveFirstSyncResponse (Result Http.Error SyncResponse) -- HTTP, Sync has finished
     | ReceiveSyncResponse (Result Http.Error SyncResponse) -- HTTP, Sync has finished
     | ReceiveLoginResponse ApiUrl (Result Http.Error LoginResponse) -- HTTP, Login has finished
-    | ReceiveUserData Username (Result Http.Error UserData)
-    | ReceiveCompletedReadMarker (Result Http.Error ())
-    | ReceiveStoreData Json.Decode.Value
+    | ReceiveUserData Username (Result Http.Error UserData) -- HTTP, receive user data
+    | ReceiveCompletedReadMarker (Result Http.Error ()) -- HTTP, read marker request completed
     | ReceiveCompletedTypingIndicator (Result Http.Error ()) -- HTTP, typing indicator request completed
+    | ReceiveStoreData Json.Decode.Value -- We are send back a value on request from localStorage.
+    | TypingTick Posix -- Tick for updating the typing status
 
 displayName : Model -> Username -> String
 displayName m s = Maybe.withDefault (senderName s) <| Maybe.andThen .displayName <| Dict.get s m.userData

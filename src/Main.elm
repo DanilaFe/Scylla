@@ -7,7 +7,7 @@ import Scylla.Api exposing (..)
 import Scylla.Model exposing (..)
 import Scylla.Http exposing (..)
 import Scylla.Views exposing (viewFull)
-import Scylla.Route exposing (Route(..))
+import Scylla.Route exposing (Route(..), RoomId)
 import Scylla.UserData exposing (..)
 import Scylla.Notification exposing (..)
 import Scylla.Storage exposing (..)
@@ -16,10 +16,14 @@ import Url.Parser exposing (parse)
 import Url.Builder
 import Json.Encode
 import Json.Decode
+import Time exposing (every)
 import Html exposing (div, text)
 import Http
 import Dict
 import Task
+
+syncTimeout = 10000
+typingTimeout = 2000
 
 type alias Flags =
     { token : Maybe String
@@ -73,12 +77,37 @@ update msg model = case msg of
     ReceiveFirstSyncResponse r -> updateSyncResponse model r False
     ReceiveSyncResponse r -> updateSyncResponse model r True
     ReceiveUserData s r -> updateUserData model s r
-    ChangeRoomText r t -> ({ model | roomText = Dict.insert r t model.roomText}, Cmd.none)
+    ChangeRoomText r t -> updateChangeRoomText model r t
     SendRoomText r -> updateSendRoomText model r
     SendRoomTextResponse r -> (model, Cmd.none)
     ReceiveCompletedReadMarker r -> (model, Cmd.none)
     ReceiveCompletedTypingIndicator r -> (model, Cmd.none)
     ReceiveStoreData d -> updateStoreData model d
+    TypingTick _ -> updateTypingTick model
+
+
+updateChangeRoomText : Model -> RoomId -> String -> (Model, Cmd Msg)
+updateChangeRoomText m roomId text = 
+    let
+        typingIndicator = case (text, Dict.get roomId m.roomText) of
+            ("", _) -> Just False
+            (_, Just "") -> Just True
+            _ -> Nothing
+        command = case typingIndicator of
+            Just b -> sendTypingIndicator m.apiUrl (Maybe.withDefault "" m.token) roomId m.loginUsername b typingTimeout
+            _ -> Cmd.none
+    in
+        ({ m | roomText = Dict.insert roomId text m.roomText}, command)
+
+updateTypingTick : Model -> (Model, Cmd Msg)
+updateTypingTick m = 
+    let
+        command = case currentRoomId m of
+            Just rid -> sendTypingIndicator m.apiUrl (Maybe.withDefault "" m.token) rid m.loginUsername True typingTimeout
+            Nothing -> Cmd.none
+    in
+        (m, command)
+
 
 updateStoreData : Model -> Json.Encode.Value -> (Model, Cmd Msg)
 updateStoreData m d = case (Json.Decode.decodeValue storeDataDecoder d) of
@@ -197,10 +226,17 @@ updateSyncResponse model r notify =
             _ -> (model, syncCmd)
 
 subscriptions : Model -> Sub Msg
-subscriptions m = Sub.batch
-    [ onNotificationClickPort OpenRoom
-    , receiveStoreValuePort ReceiveStoreData
-    ]
+subscriptions m =
+    let
+        typingTimer = case Maybe.withDefault "" <| Maybe.andThen (\rid -> Dict.get rid m.roomText) <| currentRoomId m of
+            "" -> Sub.none
+            _ -> every typingTimeout TypingTick
+    in
+        Sub.batch
+            [ onNotificationClickPort OpenRoom
+            , receiveStoreValuePort ReceiveStoreData
+            , typingTimer
+            ]
 
 onUrlRequest : Browser.UrlRequest -> Msg
 onUrlRequest = TryUrl
