@@ -15,6 +15,7 @@ import Url exposing (Url)
 import Url.Parser exposing (parse)
 import Url.Builder
 import Json.Encode
+import Json.Decode
 import Html exposing (div, text)
 import Http
 import Dict
@@ -78,15 +79,17 @@ update msg model = case msg of
     ReceiveCompletedReadMarker r -> (model, Cmd.none)
     ReceiveStoreData d -> updateStoreData model d
 
-updateStoreData : Model -> StoreData -> (Model, Cmd Msg)
-updateStoreData m d = case d.key of
-    "scylla.loginInfo" -> updateLoginInfo m d.value
-    _ -> (m, Cmd.none)
+updateStoreData : Model -> Json.Encode.Value -> (Model, Cmd Msg)
+updateStoreData m d = case (Json.Decode.decodeValue storeDataDecoder d) of
+    Ok { key, value } -> case key of
+        "scylla.loginInfo" -> updateLoginInfo m value
+        _ -> (m, Cmd.none)
+    Err _ -> (m, Cmd.none)
 
-updateLoginInfo : Model -> String -> (Model, Cmd Msg)
-updateLoginInfo m s = case decodeLoginInfo s of
-    Just (t,a,u) -> ({ m | token = Just t, apiUrl = a, loginUsername = u}, firstSync a t)
-    Nothing -> (m, Nav.pushUrl m.key <| Url.Builder.absolute [ "login" ] [])
+updateLoginInfo : Model -> Json.Encode.Value -> (Model, Cmd Msg)
+updateLoginInfo m s = case Json.Decode.decodeValue (Json.Decode.map decodeLoginInfo Json.Decode.string) s of
+    Ok (Just (t,a,u)) -> ({ m | token = Just t, apiUrl = a, loginUsername = u}, firstSync a t)
+    _ -> (m, Nav.pushUrl m.key <| Url.Builder.absolute [ "login" ] [])
 
 updateChangeRoute : Model -> Route -> (Model, Cmd Msg)
 updateChangeRoute m r =

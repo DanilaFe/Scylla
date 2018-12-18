@@ -46,7 +46,7 @@ type Msg =
     | ReceiveLoginResponse ApiUrl (Result Http.Error LoginResponse) -- HTTP, Login has finished
     | ReceiveUserData Username (Result Http.Error UserData)
     | ReceiveCompletedReadMarker (Result Http.Error ())
-    | ReceiveStoreData StoreData
+    | ReceiveStoreData Json.Decode.Value
 
 displayName : Model -> Username -> String
 displayName m s = Maybe.withDefault (senderName s) <| Maybe.andThen .displayName <| Dict.get s m.userData
