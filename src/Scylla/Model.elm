@@ -4,10 +4,12 @@ import Scylla.Sync exposing (SyncResponse, JoinedRoom, senderName)
 import Scylla.Login exposing (LoginResponse, Username, Password)
 import Scylla.UserData exposing (UserData)
 import Scylla.Route exposing (Route(..), RoomId)
+import Scylla.Storage exposing (..)
 import Browser.Navigation as Nav
 import Browser.Dom exposing (Viewport)
 import Url.Builder
 import Dict exposing (Dict)
+import Json.Decode
 import Browser
 import Http
 import Url exposing (Url)
@@ -44,6 +46,7 @@ type Msg =
     | ReceiveLoginResponse ApiUrl (Result Http.Error LoginResponse) -- HTTP, Login has finished
     | ReceiveUserData Username (Result Http.Error UserData)
     | ReceiveCompletedReadMarker (Result Http.Error ())
+    | ReceiveStoreData StoreData
 
 displayName : Model -> Username -> String
 displayName m s = Maybe.withDefault (senderName s) <| Maybe.andThen .displayName <| Dict.get s m.userData

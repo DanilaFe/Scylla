@@ -47,7 +47,7 @@ init flags url key =
             }
         cmd = case flags.token of
             Just _ -> Cmd.none
-            Nothing -> Nav.pushUrl key <| Url.Builder.absolute [ "login" ] []
+            Nothing -> getStoreValuePort "scylla.loginInfo"
     in
         (model, cmd)
 
@@ -76,6 +76,17 @@ update msg model = case msg of
     SendRoomText r -> updateSendRoomText model r
     SendRoomTextResponse r -> (model, Cmd.none)
     ReceiveCompletedReadMarker r -> (model, Cmd.none)
+    ReceiveStoreData d -> updateStoreData model d
+
+updateStoreData : Model -> StoreData -> (Model, Cmd Msg)
+updateStoreData m d = case d.key of
+    "scylla.loginInfo" -> updateLoginInfo m d.value
+    _ -> (m, Cmd.none)
+
+updateLoginInfo : Model -> String -> (Model, Cmd Msg)
+updateLoginInfo m s = case decodeLoginInfo s of
+    Just (t,a,u) -> ({ m | token = Just t, apiUrl = a, loginUsername = u}, firstSync a t)
+    Nothing -> (m, Nav.pushUrl m.key <| Url.Builder.absolute [ "login" ] [])
 
 updateChangeRoute : Model -> Route -> (Model, Cmd Msg)
 updateChangeRoute m r =
@@ -125,7 +136,7 @@ updateLoginResponse model a r = case r of
     Ok lr -> ( { model | token = Just lr.accessToken, loginUsername = lr.userId, apiUrl = a }, Cmd.batch
         [ firstSync model.apiUrl lr.accessToken
         , Nav.pushUrl model.key <| Url.Builder.absolute [] []
-        , setStoreValuePort ("scylla.loginInfo", encodeLoginInfo (lr.accessToken, model.apiUrl, lr.userId))
+        , setStoreValuePort ("scylla.loginInfo", Json.Encode.string <| encodeLoginInfo (lr.accessToken, model.apiUrl, lr.userId))
         ] )
     Err e  -> (model, Cmd.none)
 
@@ -182,7 +193,10 @@ updateSyncResponse model r notify =
             _ -> (model, syncCmd)
 
 subscriptions : Model -> Sub Msg
-subscriptions m = onNotificationClickPort OpenRoom
+subscriptions m = Sub.batch
+    [ onNotificationClickPort OpenRoom
+    , receiveStoreValuePort ReceiveStoreData
+    ]
 
 onUrlRequest : Browser.UrlRequest -> Msg
 onUrlRequest = TryUrl

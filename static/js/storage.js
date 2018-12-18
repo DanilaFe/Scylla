@@ -5,6 +5,6 @@ function setupStorage(app) {
         localStorage.setItem(key, value);
     });
     app.ports.getStoreValuePort.subscribe(function(data) {
-        app.ports.receiveStoreValuePort.send(localStorage.getItem(data));
+        app.ports.receiveStoreValuePort.send({ "key" : data, "value" : localStorage.getItem(data) });
     });
 }

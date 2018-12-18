@@ -9,21 +9,17 @@ type alias Password = String
 
 type alias LoginInfo = (ApiToken, ApiUrl, Username)
 
-encodeLoginInfo : LoginInfo -> Decode.Value
-encodeLoginInfo (t,a,u) = Encode.string (t ++ "," ++ a ++ "," ++ u)
+encodeLoginInfo : LoginInfo -> String
+encodeLoginInfo (t,a,u) = t ++ "," ++ a ++ "," ++ u
 
-parseLoginInfoString : String -> Decoder LoginInfo
-parseLoginInfoString s = case String.indexes "," s of
-    [ fst, snd ] -> Decode.succeed
+decodeLoginInfo : String -> Maybe LoginInfo
+decodeLoginInfo s = case String.indexes "," s of
+    [ fst, snd ] -> Just
         ( (String.slice 0 fst s)
         , (String.slice (fst + 1) snd s)
-        , (String.dropLeft snd s)
+        , (String.dropLeft (snd + 1) s)
         )
-    _ -> Decode.fail "Incorrectly formatted Login Info string"
-
-loginInfoDecoder : Decoder LoginInfo
-loginInfoDecoder = string
-    |> Decode.andThen parseLoginInfoString
+    _ -> Nothing
 
 type alias LoginResponse =
     { userId : String
