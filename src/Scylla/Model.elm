@@ -47,6 +47,7 @@ type Msg =
     | ReceiveUserData Username (Result Http.Error UserData)
     | ReceiveCompletedReadMarker (Result Http.Error ())
     | ReceiveStoreData Json.Decode.Value
+    | ReceiveCompletedTypingIndicator (Result Http.Error ()) -- HTTP, typing indicator request completed
 
 displayName : Model -> Username -> String
 displayName m s = Maybe.withDefault (senderName s) <| Maybe.andThen .displayName <| Dict.get s m.userData

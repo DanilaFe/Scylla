@@ -77,6 +77,7 @@ update msg model = case msg of
     SendRoomText r -> updateSendRoomText model r
     SendRoomTextResponse r -> (model, Cmd.none)
     ReceiveCompletedReadMarker r -> (model, Cmd.none)
+    ReceiveCompletedTypingIndicator r -> (model, Cmd.none)
     ReceiveStoreData d -> updateStoreData model d
 
 updateStoreData : Model -> Json.Encode.Value -> (Model, Cmd Msg)

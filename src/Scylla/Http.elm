@@ -5,7 +5,7 @@ import Scylla.Route exposing (RoomId)
 import Scylla.Sync exposing (syncResponseDecoder)
 import Scylla.Login exposing (loginResponseDecoder, Username, Password)
 import Scylla.UserData exposing (userDataDecoder, UserData)
-import Json.Encode exposing (object, string, int)
+import Json.Encode exposing (object, string, int, bool)
 import Http exposing (request, emptyBody, jsonBody, expectJson, expectWhatever)
 
 fullClientUrl : ApiUrl -> ApiUrl
@@ -99,3 +99,14 @@ setReadMarkers apiUrl token roomId fullyRead readReceipt =
             , timeout = Nothing
             , tracker = Nothing
             }
+
+sendTypingIndicator : ApiUrl -> ApiToken -> RoomId -> Username -> Bool -> Int -> Cmd Msg
+sendTypingIndicator apiUrl token room user isTyping timeout = request
+    { method = "PUT"
+    , headers = authenticatedHeaders token
+    , url = (fullClientUrl apiUrl) ++ "/rooms/" ++ room ++ "/typing/" ++ user
+    , body = jsonBody <| object [ ("timeout", int timeout), ("typing", bool isTyping) ]
+    , expect = expectWhatever ReceiveCompletedTypingIndicator
+    , timeout = Nothing
+    , tracker = Nothing
+    }
