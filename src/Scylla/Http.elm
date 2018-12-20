@@ -2,7 +2,7 @@ module Scylla.Http exposing (..)
 import Scylla.Model exposing (..)
 import Scylla.Api exposing (..)
 import Scylla.Route exposing (RoomId)
-import Scylla.Sync exposing (syncResponseDecoder)
+import Scylla.Sync exposing (syncResponseDecoder, historyResponseDecoder)
 import Scylla.Login exposing (loginResponseDecoder, Username, Password)
 import Scylla.UserData exposing (userDataDecoder, UserData)
 import Json.Encode exposing (object, string, int, bool)
@@ -26,13 +26,24 @@ firstSync apiUrl token = request
     , tracker = Nothing
     }
 
-sync : String -> ApiUrl -> ApiToken -> Cmd Msg
-sync nextBatch apiUrl token = request
+sync : ApiUrl -> ApiToken -> String -> Cmd Msg
+sync apiUrl token nextBatch = request
     { method = "GET"
     , headers = authenticatedHeaders token
     , url = (fullClientUrl apiUrl) ++ "/sync" ++ "?since=" ++ (nextBatch) ++ "&timeout=10000"
     , body = emptyBody
     , expect = expectJson ReceiveSyncResponse syncResponseDecoder
+    , timeout = Nothing
+    , tracker = Nothing
+    }
+
+getHistory : ApiUrl -> ApiToken -> RoomId -> String -> Cmd Msg
+getHistory apiUrl token room prevBatch = request
+    { method = "GET"
+    , headers = authenticatedHeaders token
+    , url = (fullClientUrl apiUrl) ++ "/rooms/" ++ room ++ "/messages" ++ "?from=" ++ prevBatch ++ "&dir=" ++ "b"
+    , body = emptyBody
+    , expect = expectJson (ReceiveHistoryResponse room) historyResponseDecoder
     , timeout = Nothing
     , tracker = Nothing
     }

@@ -1,6 +1,6 @@
 module Scylla.Model exposing (..)
 import Scylla.Api exposing (..)
-import Scylla.Sync exposing (SyncResponse, JoinedRoom, senderName)
+import Scylla.Sync exposing (SyncResponse, HistoryResponse, JoinedRoom, senderName)
 import Scylla.Login exposing (LoginResponse, Username, Password)
 import Scylla.UserData exposing (UserData)
 import Scylla.Route exposing (Route(..), RoomId)
@@ -50,6 +50,8 @@ type Msg =
     | ReceiveCompletedTypingIndicator (Result Http.Error ()) -- HTTP, typing indicator request completed
     | ReceiveStoreData Json.Decode.Value -- We are send back a value on request from localStorage.
     | TypingTick Posix -- Tick for updating the typing status
+    | History RoomId -- Load history for a room
+    | ReceiveHistoryResponse RoomId (Result Http.Error HistoryResponse) -- HTTP, receive history
 
 displayName : Model -> Username -> String
 displayName m s = Maybe.withDefault (senderName s) <| Maybe.andThen .displayName <| Dict.get s m.userData

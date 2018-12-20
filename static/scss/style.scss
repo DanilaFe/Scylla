@@ -148,6 +148,14 @@ div.message-wrapper {
 div.events-wrapper {
     overflow-y: scroll;
     flex-grow: 1;
+
+    a.history-link {
+        display: block;
+        width: 100%;
+        text-align: center;
+        box-sizing: border-box;
+        padding: 5px;
+    }
 }
 
 table.events-table {

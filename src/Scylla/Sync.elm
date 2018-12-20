@@ -2,6 +2,7 @@ module Scylla.Sync exposing (..)
 import Scylla.Api exposing (..)
 import Scylla.Notification exposing (..)
 import Scylla.Login exposing (Username)
+import Scylla.Route exposing (RoomId)
 import Dict exposing (Dict)
 import Json.Decode as Decode exposing (Decoder, int, string, float, list, value, dict, bool, field)
 import Json.Decode.Pipeline exposing (required, optional)
@@ -258,6 +259,20 @@ presenceDecoder =
     Decode.succeed Presence
         |> maybeDecode "events" (list eventDecoder)
 
+-- Room History Responses
+type alias HistoryResponse =
+    { start : String
+    , end : String
+    , chunk : List RoomEvent
+    }
+
+historyResponseDecoder : Decoder HistoryResponse
+historyResponseDecoder =
+    Decode.succeed HistoryResponse
+        |> required "start" string
+        |> required "end" string
+        |> required "chunk" (list roomEventDecoder)
+
 -- Business Logic
 uniqueByRecursive : (a -> comparable) -> List a -> Set comparable -> List a
 uniqueByRecursive f l s = case l of
@@ -327,7 +342,7 @@ mergeState : State -> State -> State
 mergeState s1 s2 = State <| mergeMaybe mergeStateEvents s1.events s2.events
 
 mergeTimeline : Timeline -> Timeline -> Timeline
-mergeTimeline t1 t2 = Timeline (mergeMaybe mergeRoomEvents t1.events t2.events) Nothing t2.prevBatch
+mergeTimeline t1 t2 = Timeline (mergeMaybe mergeRoomEvents t1.events t2.events) Nothing t1.prevBatch
 
 mergeEphemeral : Ephemeral -> Ephemeral -> Ephemeral
 mergeEphemeral e1 e2 = Ephemeral <| mergeMaybe mergeEvents e1.events e2.events
@@ -373,6 +388,40 @@ mergeSyncResponse l r =
     { r | rooms = mergeMaybe mergeRooms l.rooms r.rooms
     , accountData = mergeMaybe mergeAccountData l.accountData r.accountData
     }
+
+appendRoomHistoryResponse : JoinedRoom -> HistoryResponse -> JoinedRoom
+appendRoomHistoryResponse jr hr =
+    let
+        oldEvents = Maybe.withDefault [] <| Maybe.andThen .events jr.timeline
+        newEvents = mergeRoomEvents (List.reverse hr.chunk) oldEvents
+        newTimeline = case jr.timeline of
+            Just t -> Just { t | events = Just newEvents, prevBatch = Just hr.end }
+            Nothing -> Just { events = Just newEvents, prevBatch = Just hr.end, limited = Nothing }
+    in
+        { jr | timeline = newTimeline }
+
+appendHistoryResponse : SyncResponse -> RoomId -> HistoryResponse -> SyncResponse
+appendHistoryResponse sr r hr =
+    let
+        appendMaybeRoomHistoryResponse mr = Just <| case mr of
+            Just jr -> appendRoomHistoryResponse jr hr
+            Nothing ->
+                { state = Nothing
+                , timeline = Just
+                    { events = Just hr.chunk
+                    , limited = Nothing
+                    , prevBatch = Just hr.end
+                    }
+                , ephemeral = Nothing
+                , accountData = Nothing
+                , unreadNotifications = Nothing
+                }
+        newRooms = Just <| case sr.rooms of
+            Just rs -> { rs | join = newJoin rs.join }
+            Nothing -> { join = newJoin Nothing, leave = Nothing, invite = Nothing }
+        newJoin j = Maybe.map (Dict.update r appendMaybeRoomHistoryResponse) j
+    in
+        { sr | rooms = newRooms }
 
 -- Business Logic: Names
 senderName : String -> String

@@ -78,7 +78,27 @@ update msg model = case msg of
     ReceiveCompletedTypingIndicator r -> (model, Cmd.none)
     ReceiveStoreData d -> updateStoreData model d
     TypingTick _ -> updateTypingTick model
+    History r -> updateHistory model r
+    ReceiveHistoryResponse r hr -> updateHistoryResponse model r hr
 
+updateHistoryResponse : Model -> RoomId -> Result Http.Error HistoryResponse -> (Model, Cmd Msg)
+updateHistoryResponse m r hr = case hr of
+    Ok h -> ({ m | sync = appendHistoryResponse m.sync r h }, Cmd.none)
+    Err _ -> (m, Cmd.none)
+
+updateHistory : Model -> RoomId -> (Model, Cmd Msg)
+updateHistory m r =
+    let
+        prevBatch = Maybe.andThen .prevBatch
+            <| Maybe.andThen .timeline 
+            <| Maybe.andThen (Dict.get r)  
+            <| Maybe.andThen .join 
+            <| m.sync.rooms
+        command = case prevBatch of
+            Just pv -> getHistory m.apiUrl (Maybe.withDefault "" m.token) r pv
+            Nothing -> Cmd.none
+    in
+        (m, command)
 
 updateChangeRoomText : Model -> RoomId -> String -> (Model, Cmd Msg)
 updateChangeRoomText m roomId text = 
@@ -191,7 +211,7 @@ updateSyncResponse model r notify =
         token = Maybe.withDefault "" model.token
         nextBatch = Result.withDefault model.sync.nextBatch
             <| Result.map .nextBatch r
-        syncCmd = sync nextBatch model.apiUrl token
+        syncCmd = sync model.apiUrl token nextBatch
         newUsers sr = List.filter (\s -> not <| Dict.member s model.userData) <| roomsUsers sr
         newUserCmd sr = Cmd.batch
             <| List.map (userData model.apiUrl

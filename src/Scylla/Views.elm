@@ -109,12 +109,12 @@ loginView m = div [ class "login-wrapper" ]
     , button [ onClick AttemptLogin ] [ text "Log In" ]
     ]
 
-joinedRoomView : Model -> String -> JoinedRoom -> Html Msg
+joinedRoomView : Model -> RoomId -> JoinedRoom -> Html Msg
 joinedRoomView m roomId jr =
     let
         events = Maybe.withDefault [] <| Maybe.andThen .events jr.timeline
         renderedEvents = List.filterMap (eventView m) events
-        eventWrapper = eventWrapperView m renderedEvents
+        eventWrapper = eventWrapperView m roomId renderedEvents
         typing = List.map (displayName m) <| roomTypingUsers jr
         typingText = String.join ", " typing
         typingSuffix = case List.length typing of
@@ -155,8 +155,11 @@ iconView name =
             [ Svg.Attributes.class "feather-icon"
             ] [ Svg.use [ Svg.Attributes.xlinkHref (url ++ "#" ++ name) ] [] ]
 
-eventWrapperView : Model -> List (Html Msg) -> Html Msg
-eventWrapperView m es = div [ class "events-wrapper", id "events-wrapper" ] [ table [ class "events-table" ] es ]
+eventWrapperView : Model -> RoomId -> List (Html Msg) -> Html Msg
+eventWrapperView m rid es = div [ class "events-wrapper", id "events-wrapper" ]
+    [ a [ class "history-link", onClick <| History rid ] [ text "Load older messages" ]
+    , table [ class "events-table" ] es
+    ]
 
 eventView : Model -> RoomEvent -> Maybe (Html Msg)
 eventView m re = 
