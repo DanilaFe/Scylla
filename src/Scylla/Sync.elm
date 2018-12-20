@@ -433,19 +433,38 @@ senderName s =
     in
         String.slice 1 colonIndex s
 
+roomStateEvents : JoinedRoom -> List StateEvent
+roomStateEvents jr =
+    let
+        stateEvents = Maybe.withDefault [] <|  Maybe.andThen .events jr.state
+        timelineEvents = Maybe.withDefault [] <| Maybe.andThen .events jr.timeline
+        roomToStateEvent re =
+            { content = re.content
+            , type_ = re.type_
+            , eventId = re.eventId
+            , sender = re.sender
+            , originServerTs = re.originServerTs
+            , unsigned = re.unsigned
+            , prevContent = Nothing
+            , stateKey = ""
+            }
+        allEvents = uniqueBy .eventId (stateEvents ++ (List.map roomToStateEvent timelineEvents))
+    in
+        allEvents
+
+roomAccountData : JoinedRoom -> String -> Maybe Decode.Value
+roomAccountData jr et =
+    Maybe.map .content
+    <| Maybe.andThen (List.head << List.filter (((==) et) << .type_))
+    <| Maybe.andThen .events jr.accountData
+
 roomName : JoinedRoom -> Maybe String
 roomName jr = 
     let
-        nameEvent = Maybe.andThen (findLastEvent (((==) "m.room.name") << .type_))
-            << Maybe.andThen .events
         name c = Result.toMaybe <| Decode.decodeValue (field "name" string) c
-        maybeStateEvent = nameEvent jr.state
-        maybeTimelineEvent = nameEvent jr.timeline
-        realEventContent = case maybeTimelineEvent of
-            Just te -> Just te.content
-            _ -> Maybe.map .content maybeStateEvent
+        nameEvent = findLastEvent (((==) "m.room.name") << .type_) <| roomStateEvents jr
     in
-        Maybe.andThen name realEventContent
+        Maybe.andThen (name << .content) nameEvent
 
 -- Business Logic: Event Extraction
 notificationText : RoomEvent -> String
