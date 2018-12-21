@@ -6,9 +6,7 @@ type alias ApiToken = String
 type alias ApiUrl = String
 
 basicHeaders : List Header
-basicHeaders =
-    [ header "Content-Type" "application/json"
-    ]
+basicHeaders = []
 
 authenticatedHeaders : ApiToken -> List Header
 authenticatedHeaders token =
