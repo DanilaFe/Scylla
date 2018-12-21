@@ -86,30 +86,30 @@ update msg model = case msg of
     SendFiles rid -> (model, Select.files [ "application/*" ] <| FilesSelected rid)
     ImagesSelected rid f fs -> updateUploadSelected model rid f fs (ImageUploadComplete rid)
     FilesSelected rid f fs -> updateUploadSelected model rid f fs (FileUploadComplete rid)
-    ImageUploadComplete rid ur -> updateImageUploadComplete model rid ur
-    FileUploadComplete rid ur -> updateFileUploadComplete model rid ur
+    ImageUploadComplete rid mime ur -> updateImageUploadComplete model rid mime ur
+    FileUploadComplete rid mime ur -> updateFileUploadComplete model rid mime ur
     SendImageResponse _ -> (model, Cmd.none)
     SendFileResponse _ -> (model, Cmd.none)
 
-updateFileUploadComplete : Model -> RoomId -> (Result Http.Error String) -> (Model, Cmd Msg)
-updateFileUploadComplete m rid ur =
+updateFileUploadComplete : Model -> RoomId -> String -> (Result Http.Error String) -> (Model, Cmd Msg)
+updateFileUploadComplete m rid mime ur =
     let
         command = case ur of
-            Ok u -> sendFileMessage m.apiUrl (Maybe.withDefault "" m.token) m.transactionId rid u
+            Ok u -> sendFileMessage m.apiUrl (Maybe.withDefault "" m.token) m.transactionId rid mime u
             _ -> Cmd.none
     in
         ({ m | transactionId = m.transactionId + 1}, command)
 
-updateImageUploadComplete : Model -> RoomId -> (Result Http.Error String) -> (Model, Cmd Msg)
-updateImageUploadComplete m rid ur =
+updateImageUploadComplete : Model -> RoomId -> String -> (Result Http.Error String) -> (Model, Cmd Msg)
+updateImageUploadComplete m rid mime ur =
     let
         command = case ur of
-            Ok u -> sendImageMessage m.apiUrl (Maybe.withDefault "" m.token) m.transactionId rid u
+            Ok u -> sendImageMessage m.apiUrl (Maybe.withDefault "" m.token) m.transactionId rid mime u
             _ -> Cmd.none
     in
         ({ m | transactionId = m.transactionId + 1}, command)
 
-updateUploadSelected : Model -> RoomId -> File -> List File -> (Result Http.Error String -> Msg) -> (Model, Cmd Msg)
+updateUploadSelected : Model -> RoomId -> File -> List File -> (String -> Result Http.Error String -> Msg) -> (Model, Cmd Msg)
 updateUploadSelected m rid f fs msg =
     let
         uploadCmds = List.map (uploadMediaFile m.apiUrl (Maybe.withDefault "" m.token) msg) (f::fs)
