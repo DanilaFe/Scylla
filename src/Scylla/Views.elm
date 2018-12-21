@@ -129,6 +129,8 @@ joinedRoomView m roomId jr =
                 , onEnterKey <| SendRoomText roomId
                 , value <| Maybe.withDefault "" <| Dict.get roomId m.roomText
                 ]  []
+            , button [ onClick <| SendFiles roomId ] [ iconView "file" ]
+            , button [ onClick <| SendImages roomId ] [ iconView "image" ]
             , button [ onClick <| SendRoomText roomId ] [ iconView "send" ]
             ]
     in

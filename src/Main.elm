@@ -80,6 +80,10 @@ update msg model = case msg of
     TypingTick _ -> updateTypingTick model
     History r -> updateHistory model r
     ReceiveHistoryResponse r hr -> updateHistoryResponse model r hr
+    SendImages rid -> (model, Cmd.none)
+    SendFiles rid -> (model, Cmd.none)
+    ImagesSelected rid f fs -> (model, Cmd.none)
+    FilesSelected rid f fs -> (model, Cmd.none)
 
 updateHistoryResponse : Model -> RoomId -> Result Http.Error HistoryResponse -> (Model, Cmd Msg)
 updateHistoryResponse m r hr =

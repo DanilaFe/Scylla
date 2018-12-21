@@ -10,6 +10,7 @@ import Browser.Dom exposing (Viewport)
 import Url.Builder
 import Dict exposing (Dict)
 import Time exposing (Posix)
+import File exposing (File)
 import Json.Decode
 import Browser
 import Http
@@ -52,6 +53,10 @@ type Msg =
     | TypingTick Posix -- Tick for updating the typing status
     | History RoomId -- Load history for a room
     | ReceiveHistoryResponse RoomId (Result Http.Error HistoryResponse) -- HTTP, receive history
+    | SendImages RoomId
+    | SendFiles RoomId
+    | ImagesSelected RoomId File (List File)
+    | FilesSelected RoomId File (List File)
 
 displayName : Model -> Username -> String
 displayName m s = Maybe.withDefault (senderName s) <| Maybe.andThen .displayName <| Dict.get s m.userData
