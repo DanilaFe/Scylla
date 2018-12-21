@@ -6,7 +6,10 @@ import Scylla.Sync exposing (syncResponseDecoder, historyResponseDecoder)
 import Scylla.Login exposing (loginResponseDecoder, Username, Password)
 import Scylla.UserData exposing (userDataDecoder, UserData)
 import Json.Encode exposing (object, string, int, bool)
-import Http exposing (request, emptyBody, jsonBody, expectJson, expectWhatever)
+import Http exposing (request, emptyBody, jsonBody, fileBody, expectJson, expectWhatever)
+import File exposing (File, name, mime)
+import Url.Builder as Builder
+import Json.Decode
 
 fullClientUrl : ApiUrl -> ApiUrl
 fullClientUrl s = s ++ "/_matrix/client/r0"
@@ -37,6 +40,17 @@ sync apiUrl token nextBatch = request
     , tracker = Nothing
     }
 
+uploadMediaFile : ApiUrl -> ApiToken -> (Result Http.Error String -> Msg) -> File -> Cmd Msg
+uploadMediaFile apiUrl token msg file = request
+    { method = "POST"
+    , headers = authenticatedHeaders token
+    , url = Builder.crossOrigin (fullMediaUrl apiUrl) [ "upload" ] [ Builder.string "filename" (name file) ]
+    , body = fileBody file
+    , expect = expectJson msg <| Json.Decode.field "content_uri" Json.Decode.string
+    , timeout = Nothing
+    , tracker = Nothing
+    }
+
 getHistory : ApiUrl -> ApiToken -> RoomId -> String -> Cmd Msg
 getHistory apiUrl token room prevBatch = request
     { method = "GET"
@@ -48,22 +62,39 @@ getHistory apiUrl token room prevBatch = request
     , tracker = Nothing
     }
 
-sendTextMessage : ApiUrl -> ApiToken -> Int -> String -> String -> Cmd Msg
-sendTextMessage apiUrl token transactionId room message = request
+sendMessage : ApiUrl -> ApiToken -> Int -> RoomId -> (Result Http.Error () -> Msg) -> List (String, Json.Encode.Value) -> Cmd Msg
+sendMessage apiUrl token transactionId room msg contents = request
     { method = "PUT"
     , headers = authenticatedHeaders token
     , url = (fullClientUrl apiUrl)
         ++ "/rooms/" ++ room
         ++ "/send/" ++ "m.room.message"
         ++ "/" ++ (String.fromInt transactionId)
-    , body = jsonBody <| object
-        [ ("msgtype", string "m.text")
-        , ("body", string message)
-        ]
-    , expect = expectWhatever SendRoomTextResponse
+    , body = jsonBody <| object contents
+    , expect = expectWhatever msg
     , timeout = Nothing
     , tracker = Nothing
     }
+
+sendTextMessage : ApiUrl -> ApiToken -> Int -> RoomId -> String -> Cmd Msg
+sendTextMessage apiUrl token transactionId room message = sendMessage apiUrl token transactionId room SendRoomTextResponse
+    [ ("msgtype", string "m.text")
+    , ("body", string message)
+    ]
+
+sendImageMessage : ApiUrl -> ApiToken -> Int -> RoomId -> String -> Cmd Msg
+sendImageMessage apiUrl token transactionId room message = sendMessage apiUrl token transactionId room SendImageResponse
+    [ ("msgtype", string "m.image")
+    , ("body", string "Image")
+    , ("url", string message)
+    ]
+
+sendFileMessage : ApiUrl -> ApiToken -> Int -> RoomId -> String -> Cmd Msg
+sendFileMessage apiUrl token transactionId room message = sendMessage apiUrl token transactionId room SendFileResponse
+    [ ("msgtype", string "m.file")
+    , ("body", string "File")
+    , ("url", string message)
+    ]
 
 login : ApiUrl -> Username -> Password -> Cmd Msg
 login apiUrl username password = request

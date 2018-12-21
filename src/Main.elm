@@ -18,6 +18,8 @@ import Json.Encode
 import Json.Decode
 import Time exposing (every)
 import Html exposing (div, text)
+import File exposing (File)
+import File.Select as Select
 import Http
 import Dict
 import Task
@@ -80,10 +82,39 @@ update msg model = case msg of
     TypingTick _ -> updateTypingTick model
     History r -> updateHistory model r
     ReceiveHistoryResponse r hr -> updateHistoryResponse model r hr
-    SendImages rid -> (model, Cmd.none)
-    SendFiles rid -> (model, Cmd.none)
-    ImagesSelected rid f fs -> (model, Cmd.none)
-    FilesSelected rid f fs -> (model, Cmd.none)
+    SendImages rid -> (model, Select.files [ "image/png" ] <| ImagesSelected rid)
+    SendFiles rid -> (model, Select.files [ "application/*" ] <| FilesSelected rid)
+    ImagesSelected rid f fs -> updateUploadSelected model rid f fs (ImageUploadComplete rid)
+    FilesSelected rid f fs -> updateUploadSelected model rid f fs (FileUploadComplete rid)
+    ImageUploadComplete rid ur -> updateImageUploadComplete model rid ur
+    FileUploadComplete rid ur -> updateFileUploadComplete model rid ur
+    SendImageResponse _ -> (model, Cmd.none)
+    SendFileResponse _ -> (model, Cmd.none)
+
+updateFileUploadComplete : Model -> RoomId -> (Result Http.Error String) -> (Model, Cmd Msg)
+updateFileUploadComplete m rid ur =
+    let
+        command = case ur of
+            Ok u -> sendFileMessage m.apiUrl (Maybe.withDefault "" m.token) m.transactionId rid u
+            _ -> Cmd.none
+    in
+        ({ m | transactionId = m.transactionId + 1}, command)
+
+updateImageUploadComplete : Model -> RoomId -> (Result Http.Error String) -> (Model, Cmd Msg)
+updateImageUploadComplete m rid ur =
+    let
+        command = case ur of
+            Ok u -> sendImageMessage m.apiUrl (Maybe.withDefault "" m.token) m.transactionId rid u
+            _ -> Cmd.none
+    in
+        ({ m | transactionId = m.transactionId + 1}, command)
+
+updateUploadSelected : Model -> RoomId -> File -> List File -> (Result Http.Error String -> Msg) -> (Model, Cmd Msg)
+updateUploadSelected m rid f fs msg =
+    let
+        uploadCmds = List.map (uploadMediaFile m.apiUrl (Maybe.withDefault "" m.token) msg) (f::fs)
+    in
+        (m, Cmd.batch uploadCmds)
 
 updateHistoryResponse : Model -> RoomId -> Result Http.Error HistoryResponse -> (Model, Cmd Msg)
 updateHistoryResponse m r hr =

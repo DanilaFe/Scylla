@@ -57,6 +57,10 @@ type Msg =
     | SendFiles RoomId
     | ImagesSelected RoomId File (List File)
     | FilesSelected RoomId File (List File)
+    | ImageUploadComplete RoomId (Result Http.Error String)
+    | FileUploadComplete RoomId (Result Http.Error String)
+    | SendImageResponse (Result Http.Error ())
+    | SendFileResponse (Result Http.Error ())
 
 displayName : Model -> Username -> String
 displayName m s = Maybe.withDefault (senderName s) <| Maybe.andThen .displayName <| Dict.get s m.userData
