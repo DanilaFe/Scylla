@@ -6,6 +6,8 @@ import Scylla.Fnv as Fnv
 import Scylla.Login exposing (Username)
 import Scylla.Http exposing (fullMediaUrl)
 import Scylla.Api exposing (ApiUrl)
+import Html.Parser
+import Html.Parser.Util
 import Svg
 import Svg.Attributes
 import Url.Builder
@@ -195,9 +197,15 @@ messageTextView : Model -> RoomEvent -> Maybe (Html Msg)
 messageTextView m re =
     let
         body = Decode.decodeValue (Decode.field "body" Decode.string) re.content
+        customHtml = Maybe.map Html.Parser.Util.toVirtualDom
+            <| Maybe.andThen (Result.toMaybe << Html.Parser.run )
+            <| Result.toMaybe
+            <| Decode.decodeValue (Decode.field "formatted_body" Decode.string) re.content
         wrap mtext = span [] [ text mtext ]
     in
-        Maybe.map wrap <| Result.toMaybe body
+        case customHtml of
+            Just c -> Just <| div [ class "markdown-wrapper" ] c
+            Nothing -> Maybe.map wrap <| Result.toMaybe body
 
 messageImageView : Model -> RoomEvent -> Maybe (Html Msg)
 messageImageView m re =
