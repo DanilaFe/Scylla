@@ -448,9 +448,9 @@ roomStateEvents jr =
             , prevContent = Nothing
             , stateKey = ""
             }
-        allEvents = uniqueBy .eventId (stateEvents ++ (List.map roomToStateEvent timelineEvents))
+        allStateEvents = uniqueBy .eventId (stateEvents ++ (List.map roomToStateEvent timelineEvents))
     in
-        allEvents
+        allStateEvents
 
 roomAccountData : JoinedRoom -> String -> Maybe Decode.Value
 roomAccountData jr et =
@@ -495,16 +495,21 @@ roomTypingUsers jr = Maybe.withDefault []
     <| Maybe.andThen (findLast (((==) "m.typing") << .type_))
     <| Maybe.andThen .events jr.ephemeral
 
-roomsUsers : SyncResponse -> List Username
-roomsUsers s =
+allRoomDictEvents : Dict String { a | timeline : Maybe Timeline } -> List RoomEvent
+allRoomDictEvents dict = List.concatMap (Maybe.withDefault [] << .events)
+    <| List.filterMap .timeline
+    <| Dict.values dict
+
+allEvents : SyncResponse -> List RoomEvent
+allEvents s =
     let
-        users dict =
-            List.map .sender
-            <| (List.concatMap <| Maybe.withDefault [] << .events)
-            <| (List.filterMap .timeline)
-            <| Dict.values dict
-        usersFor f = Maybe.withDefault [] <| Maybe.map users <| Maybe.andThen f s.rooms
-        joinedUsers = usersFor .join
-        leftUsers = usersFor .leave
+        eventsFor f = Maybe.withDefault []
+            <| Maybe.map allRoomDictEvents
+            <| Maybe.andThen f s.rooms
+        joinedEvents = eventsFor .join
+        leftEvents = eventsFor .leave
     in
-        uniqueBy (\u -> u) <| leftUsers ++ joinedUsers
+        uniqueBy .eventId <| leftEvents ++ joinedEvents
+
+allUsers : SyncResponse -> List Username
+allUsers s = uniqueBy (\u -> u) <| List.map .sender <| allEvents s

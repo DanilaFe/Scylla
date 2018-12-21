@@ -82,9 +82,18 @@ update msg model = case msg of
     ReceiveHistoryResponse r hr -> updateHistoryResponse model r hr
 
 updateHistoryResponse : Model -> RoomId -> Result Http.Error HistoryResponse -> (Model, Cmd Msg)
-updateHistoryResponse m r hr = case hr of
-    Ok h -> ({ m | sync = appendHistoryResponse m.sync r h }, Cmd.none)
-    Err _ -> (m, Cmd.none)
+updateHistoryResponse m r hr =
+    let
+        newUsersCmd h = Cmd.batch
+            <| List.map (userData m.apiUrl (Maybe.withDefault "" m.token))
+            <| newUsers m
+            <| uniqueBy (\s -> s)
+            <| List.map .sender
+            <| h.chunk
+    in
+        case hr of
+            Ok h -> ({ m | sync = appendHistoryResponse m.sync r h }, newUsersCmd h)
+            Err _ -> (m, Cmd.none)
 
 updateHistory : Model -> RoomId -> (Model, Cmd Msg)
 updateHistory m r =
@@ -212,11 +221,11 @@ updateSyncResponse model r notify =
         nextBatch = Result.withDefault model.sync.nextBatch
             <| Result.map .nextBatch r
         syncCmd = sync model.apiUrl token nextBatch
-        newUsers sr = List.filter (\s -> not <| Dict.member s model.userData) <| roomsUsers sr
         newUserCmd sr = Cmd.batch
             <| List.map (userData model.apiUrl
             <| Maybe.withDefault "" model.token)
-            <| newUsers sr
+            <| newUsers model
+            <| allUsers sr
         notification sr = findFirstBy
             (\(s, e) -> e.originServerTs)
             (\(s, e) -> e.sender /= model.loginUsername)

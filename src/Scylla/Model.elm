@@ -62,6 +62,9 @@ roomUrl s = Url.Builder.absolute [ "room", s ] []
 loginUrl : String
 loginUrl = Url.Builder.absolute [ "login" ] []
 
+newUsers : Model -> List Username -> List Username
+newUsers m lus = List.filter (\u -> not <| Dict.member u m.userData) lus
+
 currentRoom : Model -> Maybe JoinedRoom
 currentRoom m =
     let
