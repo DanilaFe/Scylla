@@ -5,6 +5,7 @@ import Scylla.Login exposing (LoginResponse, Username, Password)
 import Scylla.UserData exposing (UserData)
 import Scylla.Route exposing (Route(..), RoomId)
 import Scylla.Storage exposing (..)
+import Scylla.Markdown exposing (..)
 import Browser.Navigation as Nav
 import Browser.Dom exposing (Viewport)
 import Url.Builder
@@ -61,6 +62,7 @@ type Msg =
     | FileUploadComplete RoomId String (Result Http.Error String)
     | SendImageResponse (Result Http.Error ())
     | SendFileResponse (Result Http.Error ())
+    | ReceiveMarkdown MarkdownResponse
 
 displayName : Model -> Username -> String
 displayName m s = Maybe.withDefault (senderName s) <| Maybe.andThen .displayName <| Dict.get s m.userData

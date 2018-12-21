@@ -11,6 +11,7 @@ import Scylla.Route exposing (Route(..), RoomId)
 import Scylla.UserData exposing (..)
 import Scylla.Notification exposing (..)
 import Scylla.Storage exposing (..)
+import Scylla.Markdown exposing (..)
 import Url exposing (Url)
 import Url.Parser exposing (parse)
 import Url.Builder
@@ -90,6 +91,17 @@ update msg model = case msg of
     FileUploadComplete rid mime ur -> updateFileUploadComplete model rid mime ur
     SendImageResponse _ -> (model, Cmd.none)
     SendFileResponse _ -> (model, Cmd.none)
+    ReceiveMarkdown md -> updateMarkdown model md
+
+updateMarkdown : Model -> MarkdownResponse -> (Model, Cmd Msg)
+updateMarkdown m { roomId, text, markdown } =
+    let
+        storeValueCmd = setStoreValuePort ("scylla.loginInfo", Json.Encode.string
+            <| encodeLoginInfo
+            <| LoginInfo (Maybe.withDefault "" m.token) m.apiUrl m.loginUsername (m.transactionId + 1))
+        sendMessageCmd = sendMarkdownMessage m.apiUrl (Maybe.withDefault "" m.token) (m.transactionId + 1) roomId text markdown
+    in
+        ({ m | transactionId = m.transactionId + 1 }, Cmd.batch [ storeValueCmd, sendMessageCmd ])
 
 updateFileUploadComplete : Model -> RoomId -> String -> (Result Http.Error String) -> (Model, Cmd Msg)
 updateFileUploadComplete m rid mime ur =
@@ -224,14 +236,11 @@ updateSendRoomText m r =
         combinedCmd = case message of
             Nothing -> Cmd.none
             Just s -> Cmd.batch
-                [ sendTextMessage m.apiUrl token m.transactionId r s
+                [ requestMarkdownPort { roomId = r, text = s }
                 , sendTypingIndicator m.apiUrl token r m.loginUsername False typingTimeout
-                , setStoreValuePort ("scylla.loginInfo", Json.Encode.string
-                    <| encodeLoginInfo
-                    <| LoginInfo (Maybe.withDefault "" m.token) m.apiUrl m.loginUsername (m.transactionId + 1))
                 ]
     in
-        ({ m | roomText = Dict.insert r "" m.roomText, transactionId = m.transactionId + 1 }, combinedCmd)
+        ({ m | roomText = Dict.insert r "" m.roomText }, combinedCmd)
 
 updateTryUrl : Model -> Browser.UrlRequest -> (Model, Cmd Msg)
 updateTryUrl m ur = case ur of
@@ -315,6 +324,7 @@ subscriptions m =
             [ onNotificationClickPort OpenRoom
             , receiveStoreValuePort ReceiveStoreData
             , typingTimer
+            , receiveMarkdownPort ReceiveMarkdown
             ]
 
 onUrlRequest : Browser.UrlRequest -> Msg

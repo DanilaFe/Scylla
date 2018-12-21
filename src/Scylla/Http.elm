@@ -76,6 +76,14 @@ sendMessage apiUrl token transactionId room msg contents = request
     , tracker = Nothing
     }
 
+sendMarkdownMessage : ApiUrl -> ApiToken -> Int -> RoomId -> String -> String -> Cmd Msg
+sendMarkdownMessage apiUrl token transactionId room message md = sendMessage apiUrl token transactionId room SendRoomTextResponse
+    [ ("msgtype", string "m.text")
+    , ("body", string message)
+    , ("formatted_body", string md)
+    , ("format", string "org.matrix.custom.html")
+    ]
+
 sendTextMessage : ApiUrl -> ApiToken -> Int -> RoomId -> String -> Cmd Msg
 sendTextMessage apiUrl token transactionId room message = sendMessage apiUrl token transactionId room SendRoomTextResponse
     [ ("msgtype", string "m.text")
