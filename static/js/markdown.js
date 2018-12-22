@@ -1,4 +1,4 @@
-function setupNotificationPorts(app) {
+function setupMarkdownPorts(app) {
     app.ports.requestMarkdownPort.subscribe(function(data) {
         app.ports.receiveMarkdownPort.send({
             "roomId" : data.roomId,
