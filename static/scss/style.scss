@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css?family=Open+Sans');
+@import url('https://fonts.googleapis.com/css?family=Open+Sans|Source+Code+Pro');
 $primary-color: #53C0FA;
 $primary-color-highlight: #4298C7;
 $primary-color-light: #9FDBFB;
@@ -188,10 +188,31 @@ div.markdown-wrapper {
     p {
         margin: 0px;
     }
+
+    blockquote {
+        margin: 0px 0px 0px 0px;
+        padding-left: 5px;
+        border-left: 4px solid $primary-color;
+    }
+
+    code {
+        font-family: Iosevka, "Source Code Pro", monospace, 
+    }
+
+    pre code {
+        width: 100%;
+        overflow: auto;
+        display: block;
+        box-sizing: border-box;
+        padding: 10px;
+        background-color: $background-color;
+        border-radius: 3px;
+        box-shadow: inset 0px 0px 5px rgba(0, 0, 0, .15);
+    }
 }
 
 span.sender-wrapper {
-    border-radius: 2px;
+    border-radius: 3px;
     padding-left: 5px;
     padding-right: 5px;
     display: inline-block;
