@@ -12,9 +12,9 @@ import Svg
 import Svg.Attributes
 import Url.Builder
 import Json.Decode as Decode
-import Html exposing (Html, Attribute, div, input, text, button, div, span, a, h2, table, td, tr, img)
-import Html.Attributes exposing (type_, value, href, class, style, src, id)
-import Html.Events exposing (onInput, onClick, on)
+import Html exposing (Html, Attribute, div, input, text, button, div, span, a, h2, table, td, tr, img, textarea)
+import Html.Attributes exposing (type_, value, href, class, style, src, id, rows)
+import Html.Events exposing (onInput, onClick, preventDefaultOn)
 import Dict
 
 contentRepositoryDownloadUrl : ApiUrl -> String -> String
@@ -125,8 +125,8 @@ joinedRoomView m roomId jr =
             _ -> " are typing..."
         typingWrapper = div [ class "typing-wrapper" ] [ text <| typingText ++ typingSuffix ] 
         messageInput = div [ class "message-wrapper" ]
-            [ input
-                [ type_ "text"
+            [ textarea
+                [ rows 1
                 , onInput <| ChangeRoomText roomId
                 , onEnterKey <| SendRoomText roomId
                 , value <| Maybe.withDefault "" <| Dict.get roomId m.roomText
@@ -146,9 +146,12 @@ joinedRoomView m roomId jr =
 onEnterKey : Msg -> Attribute Msg
 onEnterKey msg =
     let
-        isEnter code = if code == 13 then Decode.succeed msg else Decode.fail "Not ENTER"
+        eventDecoder = Decode.map2 (\l r -> (l, r)) (Decode.field "keyCode" Decode.int) (Decode.field "shiftKey" Decode.bool)
+        msgFor (code, shift) = if code == 13 && not shift then Decode.succeed msg else Decode.fail "Not ENTER"
+        pairTrue v = (v, True)
+        decoder = Decode.map pairTrue <| Decode.andThen msgFor <| eventDecoder
     in
-        on "keydown" (Decode.andThen isEnter <| Decode.field "keyCode" Decode.int)
+        preventDefaultOn "keydown" decoder
 
 iconView : String -> Html Msg
 iconView name =

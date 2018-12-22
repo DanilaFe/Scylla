@@ -28,9 +28,11 @@ body {
     outline: none;
 
     transition: background-color $transition-duration;
+    font-family: inherit;
+    font-size: inherit;
 }
 
-input {
+input, textarea {
     @include input-common();
     background-color: $inactive-input-color;
     color: black;
@@ -134,7 +136,7 @@ div.message-wrapper {
     display: flex;
     flex-shrink: 0;
 
-    input {
+    input, textarea {
         flex-grow: 12;   
         margin: 3px;
     }
