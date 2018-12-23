@@ -63,6 +63,7 @@ type Msg =
     | SendImageResponse (Result Http.Error ())
     | SendFileResponse (Result Http.Error ())
     | ReceiveMarkdown MarkdownResponse
+    | DismissError Int
 
 displayName : Model -> Username -> String
 displayName m s = Maybe.withDefault (senderName s) <| Maybe.andThen .displayName <| Dict.get s m.userData

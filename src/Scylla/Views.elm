@@ -50,10 +50,10 @@ viewFull model =
         [ errorList ] ++ [ core ] 
 
 errorsView : List String -> Html Msg
-errorsView = div [] << List.map errorView
+errorsView = div [ class "errors-wrapper" ] << List.indexedMap errorView
 
-errorView : String -> Html Msg
-errorView s = div [] [ text s ]
+errorView : Int -> String -> Html Msg
+errorView i s = div [ class "error-wrapper", onClick <| DismissError i ] [ iconView "alert-triangle", text s ]
 
 baseView : Model -> Maybe (String, JoinedRoom) -> Html Msg
 baseView m jr = 

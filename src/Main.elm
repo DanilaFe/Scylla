@@ -93,6 +93,10 @@ update msg model = case msg of
     SendImageResponse _ -> (model, Cmd.none)
     SendFileResponse _ -> (model, Cmd.none)
     ReceiveMarkdown md -> updateMarkdown model md
+    DismissError i -> updateDismissError model i
+
+updateDismissError : Model -> Int -> (Model, Cmd Msg)
+updateDismissError m i = ({ m | errors = (List.take i m.errors) ++ (List.drop (i+1) m.errors)}, Cmd.none)
 
 updateMarkdown : Model -> MarkdownResponse -> (Model, Cmd Msg)
 updateMarkdown m { roomId, text, markdown } =
