@@ -114,8 +114,11 @@ updateFileUploadComplete m rid mime ur =
         command = case ur of
             Ok u -> sendFileMessage m.apiUrl (Maybe.withDefault "" m.token) m.transactionId rid mime u
             _ -> Cmd.none
+        newErrors = case ur of
+            Err e -> [ "Error uploading file. Please check your internet connection and try again." ]
+            _ -> []
     in
-        ({ m | transactionId = m.transactionId + 1}, command)
+        ({ m | errors = newErrors ++ m.errors, transactionId = m.transactionId + 1}, command)
 
 updateImageUploadComplete : Model -> RoomId -> String -> (Result Http.Error String) -> (Model, Cmd Msg)
 updateImageUploadComplete m rid mime ur =
@@ -123,6 +126,9 @@ updateImageUploadComplete m rid mime ur =
         command = case ur of
             Ok u -> sendImageMessage m.apiUrl (Maybe.withDefault "" m.token) m.transactionId rid mime u
             _ -> Cmd.none
+        newErrors = case ur of
+            Err e -> [ "Error uploading image. Please check your internet connection and try again." ]
+            _ -> []
     in
         ({ m | transactionId = m.transactionId + 1}, command)
 
@@ -145,7 +151,7 @@ updateHistoryResponse m r hr =
     in
         case hr of
             Ok h -> ({ m | sync = appendHistoryResponse m.sync r h }, newUsersCmd h)
-            Err _ -> (m, Cmd.none)
+            Err _ -> ({ m | errors = "Unable to load older history from server"::m.errors }, Cmd.none)
 
 updateHistory : Model -> RoomId -> (Model, Cmd Msg)
 updateHistory m r =
@@ -230,7 +236,7 @@ updateViewportAfterMessage m vr =
 updateUserData : Model -> String -> Result Http.Error UserData -> (Model, Cmd Msg)
 updateUserData m s r = case r of
     Ok ud -> ({ m | userData = Dict.insert s ud m.userData }, Cmd.none)
-    Err e -> (m, userData m.apiUrl (Maybe.withDefault "" m.token) s)
+    Err e -> ({ m | errors = ("Failed to retrieve user data for user " ++ s)::m.errors }, userData m.apiUrl (Maybe.withDefault "" m.token) s)
 
 updateSendRoomText : Model -> RoomId -> (Model, Cmd Msg)
 updateSendRoomText m r =
@@ -261,7 +267,7 @@ updateLoginResponse model a r = case r of
             <| encodeLoginInfo 
             <| LoginInfo lr.accessToken model.apiUrl lr.userId model.transactionId)
         ] )
-    Err e  -> (model, Cmd.none)
+    Err e  -> ({ model | errors = "Failed to log in. Are your username and password correct?"::model.errors }, Cmd.none)
 
 updateSyncResponse : Model -> Result Http.Error SyncResponse -> Bool -> (Model, Cmd Msg)
 updateSyncResponse model r notify =
