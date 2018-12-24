@@ -1,0 +1,21 @@
+<!DOCTYPE HTML>
+<html>
+    <head>
+        <link rel="stylesheet" href="/static/css/style.css">
+        <script src="/static/js/elm.js"></script>
+        <script src="/static/js/notifications.js"></script>
+        <script src="/static/js/storage.js"></script>
+        <script src="/static/js/markdown.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/0.5.2/marked.min.js"></script>
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta charset="UTF-8"> 
+    </head>
+    <body>
+        <script>
+            app = Elm.Main.init({ "flags" : { "token" : null } });
+            setupNotificationPorts(app);
+            setupStorage(app);
+            setupMarkdownPorts(app);
+        </script>
+    </body>
+</html>
