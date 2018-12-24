@@ -1,6 +1,11 @@
 # Scylla
 A minimalist client for the Matrix chat protocol.
 
+## Screenshots
+![Main View](/screenshots/screenshot-1.png)
+![Login View](/screenshots/screenshot-2.png)
+![Error](/screenshots/screenshot-3.png)
+
 ## Why?
 Riot, the flagship Matrix client, is slow. Switching rooms has a noticable delay (probably around several hundred milliseconds).
 History loading causes strange jumps in the scroll position. Scylla aims to be faster and more responsive,
