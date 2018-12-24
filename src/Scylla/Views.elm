@@ -12,8 +12,8 @@ import Svg
 import Svg.Attributes
 import Url.Builder
 import Json.Decode as Decode
-import Html exposing (Html, Attribute, div, input, text, button, div, span, a, h2, table, td, tr, img, textarea)
-import Html.Attributes exposing (type_, value, href, class, style, src, id, rows)
+import Html exposing (Html, Attribute, div, input, text, button, div, span, a, h2, table, td, tr, img, textarea, video, source)
+import Html.Attributes exposing (type_, value, href, class, style, src, id, rows, controls, src)
 import Html.Events exposing (onInput, onClick, preventDefaultOn)
 import Dict
 
@@ -194,6 +194,8 @@ messageView m re =
         case msgtype of
             Ok "m.text" -> messageTextView m re
             Ok "m.image" -> messageImageView m re
+            Ok "m.file" -> messageFileView m re
+            Ok "m.video" -> messageVideoView m re
             _ -> Nothing
 
 messageTextView : Model -> RoomEvent -> Maybe (Html Msg)
@@ -218,3 +220,25 @@ messageImageView m re =
         Maybe.map (\s -> img [ class "message-image", src s ] [])
             <| Maybe.map (contentRepositoryDownloadUrl m.apiUrl)
             <| Result.toMaybe body
+
+messageFileView : Model -> RoomEvent -> Maybe (Html Msg)
+messageFileView m re =
+    let
+        decoder = Decode.map2 (\l r -> (l, r)) (Decode.field "url" Decode.string) (Decode.field "body" Decode.string)
+        fileData = Decode.decodeValue decoder re.content
+    in
+        Maybe.map (\(url, name) -> a [ href url, class "file-wrapper" ] [ iconView "file", text name ])
+        <| Maybe.map (\(url, name) -> (contentRepositoryDownloadUrl m.apiUrl url, name))
+        <| Result.toMaybe fileData
+
+messageVideoView : Model -> RoomEvent -> Maybe (Html Msg)
+messageVideoView m re =
+    let
+        decoder = Decode.map2 (\l r -> (l, r))
+            (Decode.field "url" Decode.string)
+            (Decode.field "info" <| Decode.field "mimetype" Decode.string)
+        videoData = Decode.decodeValue decoder re.content
+    in
+        Maybe.map (\(url, t) -> video [ controls True ] [ source [ src url, type_ t ] [] ])
+        <| Maybe.map (\(url, type_) -> (contentRepositoryDownloadUrl m.apiUrl url, type_))
+        <| Result.toMaybe videoData

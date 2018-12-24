@@ -72,6 +72,17 @@ h2 {
     margin-bottom: 3px;
 }
 
+a.file-wrapper {
+    display: flex;
+    align-items: center;
+
+    .feather-icon {
+        height: 30px;
+        width: 30px;
+        margin-right: 10px;
+    }
+}
+
 div.errors-wrapper {
     position: fixed;
     pointer-events: none;
@@ -206,6 +217,11 @@ table.events-table {
     }
 
     img {
+        max-width: 90%;
+        max-height: 400px;
+    }
+
+    video {
         max-width: 90%;
         max-height: 400px;
     }
