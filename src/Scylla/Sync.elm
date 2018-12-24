@@ -272,7 +272,7 @@ historyResponseDecoder =
         |> required "end" string
         |> required "chunk" (list roomEventDecoder)
 
--- Business Logic
+-- Business Logic: Helper Functions
 uniqueByRecursive : (a -> comparable) -> List a -> Set comparable -> List a
 uniqueByRecursive f l s = case l of
     x::tail -> if Set.member (f x) s
@@ -432,8 +432,9 @@ senderName s =
     in
         String.slice 1 colonIndex s
 
-roomStateEvents : JoinedRoom -> List StateEvent
-roomStateEvents jr =
+-- Business Logic: Events
+allRoomStateEvents : JoinedRoom -> List StateEvent
+allRoomStateEvents jr =
     let
         stateEvents = Maybe.withDefault [] <|  Maybe.andThen .events jr.state
         timelineEvents = Maybe.withDefault [] <| Maybe.andThen .events jr.timeline
@@ -451,6 +452,29 @@ roomStateEvents jr =
     in
         allStateEvents
 
+allRoomDictTimelineEvents : Dict String { a | timeline : Maybe Timeline } -> List RoomEvent
+allRoomDictTimelineEvents dict = List.concatMap (Maybe.withDefault [] << .events)
+    <| List.filterMap .timeline
+    <| Dict.values dict
+
+allTimelineEvents : SyncResponse -> List RoomEvent
+allTimelineEvents s =
+    let
+        eventsFor f = Maybe.withDefault []
+            <| Maybe.map allRoomDictTimelineEvents
+            <| Maybe.andThen f s.rooms
+        joinedEvents = eventsFor .join
+        leftEvents = eventsFor .leave
+    in
+        uniqueBy .eventId <| leftEvents ++ joinedEvents
+
+joinedRoomsTimelineEvents : SyncResponse -> Dict String (List RoomEvent)
+joinedRoomsTimelineEvents s =
+    Maybe.withDefault Dict.empty
+    <| Maybe.map (Dict.map (\k v -> Maybe.withDefault [] <| Maybe.andThen .events v.timeline))
+    <| Maybe.andThen .join s.rooms
+
+-- Business Logic: Room Info
 roomAccountData : JoinedRoom -> String -> Maybe Decode.Value
 roomAccountData jr et =
     Maybe.map .content
@@ -461,18 +485,10 @@ roomName : JoinedRoom -> Maybe String
 roomName jr = 
     let
         name c = Result.toMaybe <| Decode.decodeValue (field "name" string) c
-        nameEvent = findLastEvent (((==) "m.room.name") << .type_) <| roomStateEvents jr
+        nameEvent = findLastEvent (((==) "m.room.name") << .type_) <| allRoomStateEvents jr
     in
         Maybe.andThen (name << .content) nameEvent
 
--- Business Logic: Event Extraction
-joinedRoomsEvents : SyncResponse -> Dict String (List RoomEvent)
-joinedRoomsEvents s =
-    Maybe.withDefault Dict.empty
-    <| Maybe.map (Dict.map (\k v -> Maybe.withDefault [] <| Maybe.andThen .events v.timeline))
-    <| Maybe.andThen .join s.rooms
-
--- Business Logic: User Extraction
 roomTypingUsers : JoinedRoom -> List Username
 roomTypingUsers jr = Maybe.withDefault []
     <| Maybe.andThen (Result.toMaybe << Decode.decodeValue (Decode.field "user_ids" (list string)))
@@ -480,21 +496,6 @@ roomTypingUsers jr = Maybe.withDefault []
     <| Maybe.andThen (findLast (((==) "m.typing") << .type_))
     <| Maybe.andThen .events jr.ephemeral
 
-allRoomDictEvents : Dict String { a | timeline : Maybe Timeline } -> List RoomEvent
-allRoomDictEvents dict = List.concatMap (Maybe.withDefault [] << .events)
-    <| List.filterMap .timeline
-    <| Dict.values dict
-
-allEvents : SyncResponse -> List RoomEvent
-allEvents s =
-    let
-        eventsFor f = Maybe.withDefault []
-            <| Maybe.map allRoomDictEvents
-            <| Maybe.andThen f s.rooms
-        joinedEvents = eventsFor .join
-        leftEvents = eventsFor .leave
-    in
-        uniqueBy .eventId <| leftEvents ++ joinedEvents
-
+-- Business Logic: Users
 allUsers : SyncResponse -> List Username
-allUsers s = uniqueBy (\u -> u) <| List.map .sender <| allEvents s
+allUsers s = uniqueBy (\u -> u) <| List.map .sender <| allTimelineEvents s

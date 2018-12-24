@@ -1,5 +1,5 @@
 port module Scylla.Notification exposing (..)
-import Scylla.Sync exposing (SyncResponse, RoomEvent, joinedRoomsEvents)
+import Scylla.Sync exposing (SyncResponse, RoomEvent, joinedRoomsTimelineEvents)
 import Scylla.AccountData exposing (..)
 import Json.Decode as Decode exposing (string, field)
 import Dict
@@ -32,5 +32,5 @@ joinedRoomNotificationEvents s =
         List.sortBy (\(k, v) -> v.originServerTs)
         <| Dict.foldl (\k v a -> a ++ applyPair k v) []
         <| Dict.map (\k v -> List.filter (producesNotification (roomIdNotificationSetting s k)) v)
-        <| joinedRoomsEvents s
+        <| joinedRoomsTimelineEvents s
 
