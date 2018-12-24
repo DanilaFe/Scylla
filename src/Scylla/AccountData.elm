@@ -1,6 +1,7 @@
 module Scylla.AccountData exposing (..)
-import Scylla.Sync exposing (AccountData, JoinedRoom, roomAccountData)
+import Scylla.Sync exposing (SyncResponse, AccountData, JoinedRoom, roomAccountData)
 import Json.Decode as Decode
+import Dict
 
 type NotificationSetting = Normal | MentionsOnly | None
 
@@ -20,3 +21,10 @@ roomNotificationSetting jr = Maybe.withDefault Normal
     <| Maybe.andThen Result.toMaybe
     <| Maybe.map (Decode.decodeValue notificationSettingDecoder)
     <| roomAccountData jr "com.danilafe.scylla.notifications"
+
+roomIdNotificationSetting : SyncResponse -> String -> NotificationSetting
+roomIdNotificationSetting sr s = Maybe.withDefault Normal
+    <| Maybe.map roomNotificationSetting
+    <| Maybe.andThen (Dict.get s)
+    <| Maybe.andThen .join sr.rooms
+

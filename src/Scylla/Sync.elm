@@ -1,6 +1,5 @@
 module Scylla.Sync exposing (..)
 import Scylla.Api exposing (..)
-import Scylla.Notification exposing (..)
 import Scylla.Login exposing (Username)
 import Scylla.Route exposing (RoomId)
 import Dict exposing (Dict)
@@ -467,20 +466,6 @@ roomName jr =
         Maybe.andThen (name << .content) nameEvent
 
 -- Business Logic: Event Extraction
-notificationText : RoomEvent -> String
-notificationText re = case (Decode.decodeValue (field "msgtype" string) re.content) of
-    Ok "m.text" -> Result.withDefault "" <| (Decode.decodeValue (field "body" string) re.content)
-    _ -> ""
-
-notificationEvents : SyncResponse -> List (String, RoomEvent)
-notificationEvents s =
-    let
-        applyPair k = List.map (\v -> (k, v))
-    in
-        List.sortBy (\(k, v) -> v.originServerTs)
-        <| Dict.foldl (\k v a -> a ++ applyPair k v) []
-        <| joinedRoomsEvents s
-
 joinedRoomsEvents : SyncResponse -> Dict String (List RoomEvent)
 joinedRoomsEvents s =
     Maybe.withDefault Dict.empty

@@ -284,7 +284,7 @@ updateSyncResponse model r notify =
         notification sr = findFirstBy
             (\(s, e) -> e.originServerTs)
             (\(s, e) -> e.sender /= model.loginUsername)
-            <| notificationEvents sr
+            <| joinedRoomNotificationEvents sr
         notificationCmd sr = if notify
             then Maybe.withDefault Cmd.none
                     <| Maybe.map (\(s, e) -> sendNotificationPort
