@@ -273,6 +273,15 @@ historyResponseDecoder =
         |> required "chunk" (list roomEventDecoder)
 
 -- Business Logic: Helper Functions
+groupBy : (a -> comparable) -> List a -> Dict comparable (List a)
+groupBy f xs =
+    let
+        update v ml = case ml of
+            Just l -> Just (v::l)
+            Nothing -> Just [ v ]
+    in
+        List.foldl (\v acc -> Dict.update (f v) (update v) acc) Dict.empty xs
+
 uniqueByRecursive : (a -> comparable) -> List a -> Set comparable -> List a
 uniqueByRecursive f l s = case l of
     x::tail -> if Set.member (f x) s
@@ -431,6 +440,16 @@ senderName s =
             <| String.indexes ":" s
     in
         String.slice 1 colonIndex s
+
+homeserver : String -> String
+homeserver s =
+    let
+        colonIndex = Maybe.withDefault 0
+            <| Maybe.map ((+) 1)
+            <| List.head
+            <| String.indexes ":" s
+    in
+        String.dropLeft colonIndex s
 
 -- Business Logic: Events
 allRoomStateEvents : JoinedRoom -> List StateEvent

@@ -12,10 +12,11 @@ import Svg
 import Svg.Attributes
 import Url.Builder
 import Json.Decode as Decode
-import Html exposing (Html, Attribute, div, input, text, button, div, span, a, h2, table, td, tr, img, textarea, video, source)
+import Html exposing (Html, Attribute, div, input, text, button, div, span, a, h2, h3, table, td, tr, img, textarea, video, source)
 import Html.Attributes exposing (type_, value, href, class, style, src, id, rows, controls, src)
 import Html.Events exposing (onInput, onClick, preventDefaultOn)
-import Dict
+import Dict exposing (Dict)
+import Tuple
 
 contentRepositoryDownloadUrl : ApiUrl -> String -> String
 contentRepositoryDownloadUrl apiUrl s =
@@ -70,13 +71,29 @@ baseView m jr =
 roomListView : Model -> Html Msg
 roomListView m =
     let
-        rooms = Maybe.withDefault (Dict.empty) <| Maybe.andThen .join <| m.sync.rooms
-        roomList = div [ class "rooms-list" ] <| Dict.values <| Dict.map roomListElementView rooms
+        rooms = Maybe.withDefault (Dict.empty)
+            <| Maybe.andThen .join
+            <| m.sync.rooms
+        groups = roomGroups
+            <| Dict.toList rooms
+        homeserverList = div [ class "homeservers-list" ]
+            <| List.map (\(k, v) -> homeserverView k v)
+            <| Dict.toList groups
     in
         div [ class "rooms-wrapper" ]
             [ h2 [] [ text "Rooms" ]
-            , roomList
+            , homeserverList
             ]
+
+roomGroups : List (String, JoinedRoom) -> Dict String (List (String, JoinedRoom))
+roomGroups jrs = groupBy (homeserver << Tuple.first) jrs
+
+homeserverView : String -> List (String, JoinedRoom) -> Html Msg
+homeserverView hs rs =
+    let
+        roomList = div [ class "rooms-list" ] <| List.map (\(rid, r) -> roomListElementView rid r) rs
+    in
+        div [ class "homeserver-wrapper" ] [ h3 [] [ text hs ], roomList ]
 
 roomListElementView : String -> JoinedRoom -> Html Msg
 roomListElementView s jr =
