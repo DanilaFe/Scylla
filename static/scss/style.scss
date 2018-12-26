@@ -2,8 +2,8 @@
 $primary-color: #53C0FA;
 $primary-color-highlight: #4298C7;
 $primary-color-light: #9FDBFB;
-$active-input-color: white;
-$background-color: #fafafa;
+$active-input-color: #282d30;
+$background-color: #1b1e21;
 $background-color-dark: darken($background-color, 4%);
 $error-color: #f01d43;
 $error-color-dark: darken(#f01d43, 10%);
@@ -22,6 +22,7 @@ body {
     margin: 0px;
     background-color: $background-color;
     font-size: 12px;
+    color: white;
 }
 
 @mixin input-common {
@@ -37,7 +38,7 @@ body {
 input, textarea {
     @include input-common();
     background-color: $inactive-input-color;
-    color: black;
+    color: white;
     border: .5px solid $inactive-input-border-color;
 
     &:focus {
@@ -275,6 +276,7 @@ span.sender-wrapper {
     text-overflow: ellipsis;
     overflow: hidden;
     vertical-align: bottom; /* Fix for overflow changing element height */
+    color: black;
 }
 
 /**
