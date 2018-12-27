@@ -29,6 +29,7 @@ type alias Model =
     , roomText : Dict String String
     , transactionId : Int
     , userData : Dict Username UserData
+    , connected : Bool
     }
 
 type Msg =
@@ -64,6 +65,7 @@ type Msg =
     | SendFileResponse (Result Http.Error ())
     | ReceiveMarkdown MarkdownResponse
     | DismissError Int
+    | AttemptReconnect
 
 displayName : Model -> Username -> String
 displayName m s = Maybe.withDefault (senderName s) <| Maybe.andThen .displayName <| Dict.get s m.userData

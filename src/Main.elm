@@ -49,6 +49,7 @@ init _ url key =
             , roomText = Dict.empty
             , transactionId = 0
             , userData = Dict.empty
+            , connected = True
             }
         cmd = getStoreValuePort "scylla.loginInfo"
     in
@@ -94,6 +95,7 @@ update msg model = case msg of
     SendFileResponse _ -> (model, Cmd.none)
     ReceiveMarkdown md -> updateMarkdown model md
     DismissError i -> updateDismissError model i
+    AttemptReconnect -> ({ model | connected = True }, firstSync model.apiUrl (Maybe.withDefault "" model.token))
 
 updateDismissError : Model -> Int -> (Model, Cmd Msg)
 updateDismissError m i = ({ m | errors = (List.take i m.errors) ++ (List.drop (i+1) m.errors)}, Cmd.none)
@@ -319,7 +321,7 @@ updateSyncResponse model r notify =
                 , setScrollCmd sr
                 , setReadReceiptCmd sr
                 ])
-            _ -> (model, Cmd.none)
+            _ -> ({ model | connected = False }, Cmd.none)
 
 subscriptions : Model -> Sub Msg
 subscriptions m =

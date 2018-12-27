@@ -2,16 +2,19 @@
 $primary-color: #53C0FA;
 $primary-color-highlight: #4298C7;
 $primary-color-light: #9FDBFB;
-$active-input-color: #282d30;
+
 $background-color: #1b1e21;
 $background-color-dark: darken($background-color, 4%);
+
 $error-color: #f01d43;
 $error-color-dark: darken(#f01d43, 10%);
-$transition-duration: .125s;
 
-$inactive-input-color: darken($active-input-color, 3%);
+$active-input-color: #282d30;
 $active-input-border-color: $primary-color;
+$inactive-input-color: darken($active-input-color, 3%);
 $inactive-input-border-color: darken($inactive-input-color, 10%);
+
+$transition-duration: .125s;
 
 html, body {
     height: 100vh;
@@ -157,6 +160,21 @@ div.room-link-wrapper {
 
     span, a {
         margin-right: 5px;
+    }
+}
+
+div.reconnect-wrapper {
+    position: fixed;
+    bottom: 20px;
+    left: 20px;
+    display: flex;
+    align-items: center;
+    background-color: $inactive-input-color;
+    border: 1px solid $inactive-input-border-color;
+    border-radius: 3px;
+
+    .feather-icon {
+        margin-right: 10px;
     }
 }
 

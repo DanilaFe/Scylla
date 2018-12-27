@@ -18,6 +18,9 @@ import Html.Events exposing (onInput, onClick, preventDefaultOn)
 import Dict exposing (Dict)
 import Tuple
 
+maybeHtml : List (Maybe (Html Msg)) -> List (Html Msg)
+maybeHtml = List.filterMap (\i -> i)
+
 contentRepositoryDownloadUrl : ApiUrl -> String -> String
 contentRepositoryDownloadUrl apiUrl s =
     let
@@ -59,14 +62,19 @@ errorView i s = div [ class "error-wrapper", onClick <| DismissError i ] [ iconV
 baseView : Model -> Maybe (String, JoinedRoom) -> Html Msg
 baseView m jr = 
     let
-        roomView = case jr of
-            Just (id, r) -> joinedRoomView m id r
-            Nothing -> div [] []
+        roomView = Maybe.map (\(id, r) -> joinedRoomView m id r) jr
+        reconnect = reconnectView m
     in
-        div [ class "base-wrapper" ]
-        [ roomListView m
-        , roomView
-        ]
+        div [ class "base-wrapper" ] <| maybeHtml
+            [ Just <| roomListView m
+            , roomView
+            , reconnect
+            ]
+
+reconnectView : Model -> Maybe (Html Msg)
+reconnectView m = if m.connected
+    then Nothing
+    else Just <| div [ class "reconnect-wrapper", onClick AttemptReconnect ] [ iconView "zap", text "Disconnected. Click here to reconnect." ]
 
 roomListView : Model -> Html Msg
 roomListView m =
