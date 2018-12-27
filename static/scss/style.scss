@@ -229,7 +229,9 @@ table.events-table {
 
     td:nth-child(1) {
         width: 10%;
-        max-width: 100px;
+        @media screen and (min-width: 1000px) {
+            width: 100px;
+        }
         white-space: nowrap;
     }
 
