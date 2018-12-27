@@ -236,7 +236,7 @@ updateViewportAfterMessage m vr =
 updateUserData : Model -> String -> Result Http.Error UserData -> (Model, Cmd Msg)
 updateUserData m s r = case r of
     Ok ud -> ({ m | userData = Dict.insert s ud m.userData }, Cmd.none)
-    Err e -> ({ m | errors = ("Failed to retrieve user data for user " ++ s)::m.errors }, userData m.apiUrl (Maybe.withDefault "" m.token) s)
+    Err e -> ({ m | errors = ("Failed to retrieve user data for user " ++ s)::m.errors }, Cmd.none)
 
 updateSendRoomText : Model -> RoomId -> (Model, Cmd Msg)
 updateSendRoomText m r =
@@ -319,7 +319,7 @@ updateSyncResponse model r notify =
                 , setScrollCmd sr
                 , setReadReceiptCmd sr
                 ])
-            _ -> (model, syncCmd)
+            _ -> (model, Cmd.none)
 
 subscriptions : Model -> Sub Msg
 subscriptions m =
