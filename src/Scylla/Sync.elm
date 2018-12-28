@@ -392,18 +392,10 @@ mergeRooms r1 r2 =
     }
 
 mergeSyncResponse : SyncResponse -> SyncResponse -> SyncResponse
-mergeSyncResponse l r = filterUselessState <| 
+mergeSyncResponse l r = 
     { r | rooms = mergeMaybe mergeRooms l.rooms r.rooms
     , accountData = mergeMaybe mergeAccountData l.accountData r.accountData
     }
-
-filterUselessState : SyncResponse -> SyncResponse
-filterUselessState sr =
-    let
-        filterUselessRoomState _ r = { r | state = Maybe.map (\s -> { s | events = Maybe.map (List.filter (((==) "m.room.name") << .type_)) s.events }) r.state }
-        filterUselessRoomsState rs = { rs | join = Maybe.map (Dict.map filterUselessRoomState) rs.join }
-    in
-        { sr | rooms = Maybe.map (filterUselessRoomsState) sr.rooms }
 
 appendRoomHistoryResponse : JoinedRoom -> HistoryResponse -> JoinedRoom
 appendRoomHistoryResponse jr hr =

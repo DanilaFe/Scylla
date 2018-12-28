@@ -5,11 +5,24 @@ import Scylla.Route exposing (RoomId)
 import Scylla.Sync exposing (syncResponseDecoder, historyResponseDecoder)
 import Scylla.Login exposing (loginResponseDecoder, Username, Password)
 import Scylla.UserData exposing (userDataDecoder, UserData)
-import Json.Encode exposing (object, string, int, bool)
+import Url.Builder
+import Json.Encode exposing (object, string, int, bool, list)
 import Http exposing (request, emptyBody, jsonBody, fileBody, expectJson, expectWhatever)
 import File exposing (File, name, mime)
 import Url.Builder as Builder
 import Json.Decode
+
+firstSyncFilter : Json.Decode.Value
+firstSyncFilter = object
+    [ ("room", object
+        [ ("state", object
+            [ ("types", list string [ "m.room.name" ])
+            ])
+        ])
+    ]
+
+firstSyncFilterString : String
+firstSyncFilterString = Json.Encode.encode 0 firstSyncFilter
 
 fullClientUrl : ApiUrl -> ApiUrl
 fullClientUrl s = s ++ "/_matrix/client/r0"
@@ -22,7 +35,7 @@ firstSync : ApiUrl -> ApiToken -> Cmd Msg
 firstSync apiUrl token = request
     { method = "GET"
     , headers = authenticatedHeaders token
-    , url = (fullClientUrl apiUrl) ++ "/sync"
+    , url = Url.Builder.crossOrigin (fullClientUrl apiUrl) [ "sync" ] [ Url.Builder.string "filter" firstSyncFilterString ]
     , body = emptyBody
     , expect = expectJson ReceiveFirstSyncResponse syncResponseDecoder
     , timeout = Nothing
