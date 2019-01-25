@@ -114,7 +114,7 @@ updateFileUploadComplete : Model -> RoomId -> String -> (Result Http.Error Strin
 updateFileUploadComplete m rid mime ur =
     let
         command = case ur of
-            Ok u -> sendFileMessage m.apiUrl (Maybe.withDefault "" m.token) m.transactionId rid mime u
+            Ok u -> sendFileMessage m.apiUrl (Maybe.withDefault "" m.token) (m.transactionId + 1) rid mime u
             _ -> Cmd.none
         newErrors = case ur of
             Err e -> [ "Error uploading file. Please check your internet connection and try again." ]
@@ -126,7 +126,7 @@ updateImageUploadComplete : Model -> RoomId -> String -> (Result Http.Error Stri
 updateImageUploadComplete m rid mime ur =
     let
         command = case ur of
-            Ok u -> sendImageMessage m.apiUrl (Maybe.withDefault "" m.token) m.transactionId rid mime u
+            Ok u -> sendImageMessage m.apiUrl (Maybe.withDefault "" m.token) (m.transactionId + 1) rid mime u
             _ -> Cmd.none
         newErrors = case ur of
             Err e -> [ "Error uploading image. Please check your internet connection and try again." ]
