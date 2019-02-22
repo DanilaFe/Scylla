@@ -59,8 +59,8 @@ type Msg =
     | SendFiles RoomId
     | ImagesSelected RoomId File (List File)
     | FilesSelected RoomId File (List File)
-    | ImageUploadComplete RoomId String (Result Http.Error String)
-    | FileUploadComplete RoomId String (Result Http.Error String)
+    | ImageUploadComplete RoomId File (Result Http.Error String)
+    | FileUploadComplete RoomId File (Result Http.Error String)
     | SendImageResponse (Result Http.Error ())
     | SendFileResponse (Result Http.Error ())
     | ReceiveMarkdown MarkdownResponse

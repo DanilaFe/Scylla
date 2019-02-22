@@ -110,7 +110,7 @@ updateMarkdown m { roomId, text, markdown } =
     in
         ({ m | transactionId = m.transactionId + 1 }, Cmd.batch [ storeValueCmd, sendMessageCmd ])
 
-updateFileUploadComplete : Model -> RoomId -> String -> (Result Http.Error String) -> (Model, Cmd Msg)
+updateFileUploadComplete : Model -> RoomId -> File -> (Result Http.Error String) -> (Model, Cmd Msg)
 updateFileUploadComplete m rid mime ur =
     let
         command = case ur of
@@ -122,7 +122,7 @@ updateFileUploadComplete m rid mime ur =
     in
         ({ m | errors = newErrors ++ m.errors, transactionId = m.transactionId + 1}, command)
 
-updateImageUploadComplete : Model -> RoomId -> String -> (Result Http.Error String) -> (Model, Cmd Msg)
+updateImageUploadComplete : Model -> RoomId -> File -> (Result Http.Error String) -> (Model, Cmd Msg)
 updateImageUploadComplete m rid mime ur =
     let
         command = case ur of
@@ -134,7 +134,7 @@ updateImageUploadComplete m rid mime ur =
     in
         ({ m | transactionId = m.transactionId + 1}, command)
 
-updateUploadSelected : Model -> RoomId -> File -> List File -> (String -> Result Http.Error String -> Msg) -> (Model, Cmd Msg)
+updateUploadSelected : Model -> RoomId -> File -> List File -> (File -> Result Http.Error String -> Msg) -> (Model, Cmd Msg)
 updateUploadSelected m rid f fs msg =
     let
         uploadCmds = List.map (uploadMediaFile m.apiUrl (Maybe.withDefault "" m.token) msg) (f::fs)

@@ -53,13 +53,13 @@ sync apiUrl token nextBatch = request
     , tracker = Nothing
     }
 
-uploadMediaFile : ApiUrl -> ApiToken -> (String -> Result Http.Error String -> Msg) -> File -> Cmd Msg
+uploadMediaFile : ApiUrl -> ApiToken -> (File -> Result Http.Error String -> Msg) -> File -> Cmd Msg
 uploadMediaFile apiUrl token msg file = request
     { method = "POST"
     , headers = authenticatedHeaders token
     , url = Builder.crossOrigin (fullMediaUrl apiUrl) [ "upload" ] [ Builder.string "filename" (name file) ]
     , body = fileBody file
-    , expect = expectJson (msg <| mime file) <| Json.Decode.field "content_uri" Json.Decode.string
+    , expect = expectJson (msg file) <| Json.Decode.field "content_uri" Json.Decode.string
     , timeout = Nothing
     , tracker = Nothing
     }
@@ -103,20 +103,20 @@ sendTextMessage apiUrl token transactionId room message = sendMessage apiUrl tok
     , ("body", string message)
     ]
 
-sendImageMessage : ApiUrl -> ApiToken -> Int -> RoomId -> String -> String -> Cmd Msg
-sendImageMessage apiUrl token transactionId room mime message = sendMessage apiUrl token transactionId room SendImageResponse
+sendImageMessage : ApiUrl -> ApiToken -> Int -> RoomId -> File -> String -> Cmd Msg
+sendImageMessage apiUrl token transactionId room file message = sendMessage apiUrl token transactionId room SendImageResponse
     [ ("msgtype", string "m.image")
-    , ("body", string "Image")
+    , ("body", string <| name file)
     , ("url", string message)
-    , ("info", object [ ("mimetype", string mime) ])
+    , ("info", object [ ("mimetype", string <| mime file) ])
     ]
 
-sendFileMessage : ApiUrl -> ApiToken -> Int -> RoomId -> String -> String -> Cmd Msg
-sendFileMessage apiUrl token transactionId room mime message = sendMessage apiUrl token transactionId room SendFileResponse
+sendFileMessage : ApiUrl -> ApiToken -> Int -> RoomId -> File -> String -> Cmd Msg
+sendFileMessage apiUrl token transactionId room file message = sendMessage apiUrl token transactionId room SendFileResponse
     [ ("msgtype", string "m.file")
-    , ("body", string "File")
+    , ("body", string <| name file)
     , ("url", string message)
-    , ("info", object [ ("mimetype", string mime) ])
+    , ("info", object [ ("mimetype", string <| mime file) ])
     ]
 
 login : ApiUrl -> Username -> Password -> Cmd Msg
