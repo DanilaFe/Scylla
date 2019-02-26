@@ -49,6 +49,7 @@ init _ url key =
                 }
             , errors = []
             , roomText = Dict.empty
+            , sending = Dict.empty
             , transactionId = 0
             , userData = Dict.empty
             , connected = True
