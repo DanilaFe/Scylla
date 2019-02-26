@@ -230,7 +230,7 @@ updateViewportAfterMessage : Model -> Result Browser.Dom.Error Viewport -> (Mode
 updateViewportAfterMessage m vr = 
     let
         cmd vp = if vp.scene.height - (vp.viewport.y + vp.viewport.height ) < 100
-            then Task.attempt ViewportChangeComplete <| setViewportOf "events-wrapper" vp.viewport.x vp.scene.height
+            then Task.attempt ViewportChangeComplete <| setViewportOf "messages-wrapper" vp.viewport.x vp.scene.height
             else Cmd.none
     in
         (m, Result.withDefault Cmd.none <| Result.map cmd vr)
@@ -308,7 +308,7 @@ updateSyncResponse model r notify =
         setScrollCmd sr = if List.isEmpty 
             <| roomMessages sr
                 then Cmd.none
-                else Task.attempt ViewportAfterMessage (Browser.Dom.getViewportOf "events-wrapper")
+                else Task.attempt ViewportAfterMessage (Browser.Dom.getViewportOf "messages-wrapper")
         setReadReceiptCmd sr = case (room, List.head <| List.reverse <| roomMessages sr) of
             (Just rid, Just re) -> setReadMarkers model.apiUrl token rid re.eventId <| Just re.eventId
             _ -> Cmd.none

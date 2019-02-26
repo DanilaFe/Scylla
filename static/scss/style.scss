@@ -212,7 +212,7 @@ div.message-wrapper {
     }
 }
 
-div.events-wrapper {
+div.messages-wrapper {
     overflow-y: scroll;
     flex-grow: 1;
 
@@ -225,7 +225,7 @@ div.events-wrapper {
     }
 }
 
-table.events-table {
+table.messages-table {
     border-collapse: collapse;
     width: 100%;
     table-layout: fixed;
@@ -258,7 +258,7 @@ table.events-table {
     }
 }
 
-div.markdown-wrapper {
+div.message {
     p {
         margin: 0px;
     }
@@ -291,7 +291,8 @@ span.sender-wrapper {
     padding-right: 5px;
     display: inline-block;
     box-sizing: border-box;
-    text-align: center;
+    text-align: right;
+    font-weight: 800;
     width: 100%;
     text-overflow: ellipsis;
     overflow: hidden;

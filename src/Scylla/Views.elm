@@ -3,6 +3,7 @@ import Scylla.Model exposing (..)
 import Scylla.Sync exposing (..)
 import Scylla.Route exposing (..)
 import Scylla.Fnv as Fnv
+import Scylla.Messages exposing (..)
 import Scylla.Login exposing (Username)
 import Scylla.Http exposing (fullMediaUrl)
 import Scylla.Api exposing (ApiUrl)
@@ -12,7 +13,7 @@ import Svg
 import Svg.Attributes
 import Url.Builder
 import Json.Decode as Decode
-import Html exposing (Html, Attribute, div, input, text, button, div, span, a, h2, h3, table, td, tr, img, textarea, video, source)
+import Html exposing (Html, Attribute, div, input, text, button, div, span, a, h2, h3, table, td, tr, img, textarea, video, source, p)
 import Html.Attributes exposing (type_, value, href, class, style, src, id, rows, controls, src)
 import Html.Events exposing (onInput, onClick, preventDefaultOn)
 import Dict exposing (Dict)
@@ -140,8 +141,8 @@ joinedRoomView : Model -> RoomId -> JoinedRoom -> Html Msg
 joinedRoomView m roomId jr =
     let
         events = Maybe.withDefault [] <| Maybe.andThen .events jr.timeline
-        renderedEvents = List.filterMap (eventView m) events
-        eventWrapper = eventWrapperView m roomId renderedEvents
+        renderedMessages = List.map (userMessagesView m) <| mergeMessages m <| extractMessageEvents events
+        messagesWrapper = messagesWrapperView m roomId renderedMessages
         typing = List.map (displayName m) <| roomTypingUsers jr
         typingText = String.join ", " typing
         typingSuffix = case List.length typing of
@@ -163,7 +164,7 @@ joinedRoomView m roomId jr =
     in
         div [ class "room-wrapper" ]
             [ h2 [] [ text <| Maybe.withDefault "<No Name>" <| roomName jr ]
-            , eventWrapper
+            , messagesWrapper
             , typingWrapper
             , messageInput
             ]
@@ -187,58 +188,58 @@ iconView name =
             [ Svg.Attributes.class "feather-icon"
             ] [ Svg.use [ Svg.Attributes.xlinkHref (url ++ "#" ++ name) ] [] ]
 
-eventWrapperView : Model -> RoomId -> List (Html Msg) -> Html Msg
-eventWrapperView m rid es = div [ class "events-wrapper", id "events-wrapper" ]
+messagesWrapperView : Model -> RoomId -> List (Html Msg) -> Html Msg
+messagesWrapperView m rid es = div [ class "messages-wrapper", id "messages-wrapper" ]
     [ a [ class "history-link", onClick <| History rid ] [ text "Load older messages" ]
-    , table [ class "events-table" ] es
+    , table [ class "messages-table" ] es
     ]
 
-eventView : Model -> RoomEvent -> Maybe (Html Msg)
-eventView m re = 
+senderView : Model -> Username -> Html Msg
+senderView m s =
+    span [ style "color" <| stringColor s, class "sender-wrapper" ] [ text <| displayName m s ]
+
+userMessagesView : Model -> (Username, List Message) -> Html Msg
+userMessagesView m (u, ms) = 
     let
-        viewFunction = case re.type_ of
-            "m.room.message" -> Just messageView
-            _ -> Nothing
-        createRow mhtml = tr []
-            [ td [] [ eventSenderView m re.sender ]
-            , td [] [ mhtml ]
-            ]
+        wrap h = div [ class "message" ] [ h ]
     in
-        Maybe.map createRow
-            <| Maybe.andThen (\f -> f m re) viewFunction
+        tr []
+            [ td [] [ senderView m u ]
+            , td [] <| List.map wrap <| List.filterMap (messageView m) ms
+            ]
 
-eventSenderView : Model -> Username -> Html Msg
-eventSenderView m s =
-    span [ style "background-color" <| stringColor s, class "sender-wrapper" ] [ text <| displayName m s ]
+messageView : Model -> Message -> Maybe (Html Msg)
+messageView m msg = case msg of
+    SendingTextMessage t _ -> Just <| div [] [ text t ]
+    SyncMessage re -> roomEventView m re
 
-messageView : Model -> RoomEvent -> Maybe (Html Msg)
-messageView m re =
+roomEventView : Model -> RoomEvent -> Maybe (Html Msg)
+roomEventView m re =
     let
         msgtype = Decode.decodeValue (Decode.field "msgtype" Decode.string) re.content
     in
         case msgtype of
-            Ok "m.text" -> messageTextView m re
-            Ok "m.image" -> messageImageView m re
-            Ok "m.file" -> messageFileView m re
-            Ok "m.video" -> messageVideoView m re
+            Ok "m.text" -> roomEventTextView m re
+            Ok "m.image" -> roomEventImageView m re
+            Ok "m.file" -> roomEventFileView m re
+            Ok "m.video" -> roomEventVideoView m re
             _ -> Nothing
 
-messageTextView : Model -> RoomEvent -> Maybe (Html Msg)
-messageTextView m re =
+roomEventTextView : Model -> RoomEvent -> Maybe (Html Msg)
+roomEventTextView m re =
     let
         body = Decode.decodeValue (Decode.field "body" Decode.string) re.content
         customHtml = Maybe.map Html.Parser.Util.toVirtualDom
             <| Maybe.andThen (Result.toMaybe << Html.Parser.run )
             <| Result.toMaybe
             <| Decode.decodeValue (Decode.field "formatted_body" Decode.string) re.content
-        wrap mtext = span [] [ text mtext ]
     in
         case customHtml of
-            Just c -> Just <| div [ class "markdown-wrapper" ] c
-            Nothing -> Maybe.map wrap <| Result.toMaybe body
+            Just c -> Just <| div [] c
+            Nothing -> Maybe.map (p [] << List.singleton << text) <| Result.toMaybe body
 
-messageImageView : Model -> RoomEvent -> Maybe (Html Msg)
-messageImageView m re =
+roomEventImageView : Model -> RoomEvent -> Maybe (Html Msg)
+roomEventImageView m re =
     let
         body = Decode.decodeValue (Decode.field "url" Decode.string) re.content
     in
@@ -246,8 +247,8 @@ messageImageView m re =
             <| Maybe.map (contentRepositoryDownloadUrl m.apiUrl)
             <| Result.toMaybe body
 
-messageFileView : Model -> RoomEvent -> Maybe (Html Msg)
-messageFileView m re =
+roomEventFileView : Model -> RoomEvent -> Maybe (Html Msg)
+roomEventFileView m re =
     let
         decoder = Decode.map2 (\l r -> (l, r)) (Decode.field "url" Decode.string) (Decode.field "body" Decode.string)
         fileData = Decode.decodeValue decoder re.content
@@ -256,8 +257,8 @@ messageFileView m re =
         <| Maybe.map (\(url, name) -> (contentRepositoryDownloadUrl m.apiUrl url, name))
         <| Result.toMaybe fileData
 
-messageVideoView : Model -> RoomEvent -> Maybe (Html Msg)
-messageVideoView m re =
+roomEventVideoView : Model -> RoomEvent -> Maybe (Html Msg)
+roomEventVideoView m re =
     let
         decoder = Decode.map2 (\l r -> (l, r))
             (Decode.field "url" Decode.string)
