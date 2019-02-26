@@ -90,7 +90,7 @@ sendMessage apiUrl token transactionId room msg contents = request
     }
 
 sendMarkdownMessage : ApiUrl -> ApiToken -> Int -> RoomId -> String -> String -> Cmd Msg
-sendMarkdownMessage apiUrl token transactionId room message md = sendMessage apiUrl token transactionId room SendRoomTextResponse
+sendMarkdownMessage apiUrl token transactionId room message md = sendMessage apiUrl token transactionId room (SendRoomTextResponse transactionId)
     [ ("msgtype", string "m.text")
     , ("body", string message)
     , ("formatted_body", string md)
@@ -98,7 +98,7 @@ sendMarkdownMessage apiUrl token transactionId room message md = sendMessage api
     ]
 
 sendTextMessage : ApiUrl -> ApiToken -> Int -> RoomId -> String -> Cmd Msg
-sendTextMessage apiUrl token transactionId room message = sendMessage apiUrl token transactionId room SendRoomTextResponse
+sendTextMessage apiUrl token transactionId room message = sendMessage apiUrl token transactionId room (SendRoomTextResponse transactionId)
     [ ("msgtype", string "m.text")
     , ("body", string message)
     ]

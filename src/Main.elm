@@ -2,6 +2,8 @@ import Browser exposing (application, UrlRequest(..))
 import Browser.Navigation as Nav
 import Browser.Dom exposing (Viewport, setViewportOf)
 import Scylla.Sync exposing (..)
+import Scylla.Room exposing (..)
+import Scylla.Messages exposing (..)
 import Scylla.Login exposing (..)
 import Scylla.Api exposing (..)
 import Scylla.Model exposing (..)
@@ -78,7 +80,7 @@ update msg model = case msg of
     ReceiveUserData s r -> updateUserData model s r
     ChangeRoomText r t -> updateChangeRoomText model r t
     SendRoomText r -> updateSendRoomText model r
-    SendRoomTextResponse r -> (model, Cmd.none)
+    SendRoomTextResponse t r -> ({ model | sending = Dict.remove t model.sending }, Cmd.none)
     ReceiveCompletedReadMarker r -> (model, Cmd.none)
     ReceiveCompletedTypingIndicator r -> (model, Cmd.none)
     ReceiveStoreData d -> updateStoreData model d
@@ -107,8 +109,12 @@ updateMarkdown m { roomId, text, markdown } =
             <| encodeLoginInfo
             <| LoginInfo (Maybe.withDefault "" m.token) m.apiUrl m.loginUsername (m.transactionId + 1))
         sendMessageCmd = sendMarkdownMessage m.apiUrl (Maybe.withDefault "" m.token) (m.transactionId + 1) roomId text markdown
+        newModel =
+            { m | transactionId = m.transactionId + 1
+            , sending = Dict.insert (m.transactionId + 1) (roomId, TextMessage text) m.sending
+            }
     in
-        ({ m | transactionId = m.transactionId + 1 }, Cmd.batch [ storeValueCmd, sendMessageCmd ])
+        (newModel, Cmd.batch [ storeValueCmd, sendMessageCmd ])
 
 updateFileUploadComplete : Model -> RoomId -> File -> (Result Http.Error String) -> (Model, Cmd Msg)
 updateFileUploadComplete m rid mime ur =

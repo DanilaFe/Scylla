@@ -1,5 +1,4 @@
 module Scylla.Messages exposing (..)
-import Scylla.Model exposing (Model)
 import Scylla.Sync exposing (RoomEvent)
 import Scylla.Login exposing (Username)
 
@@ -9,17 +8,13 @@ type Message =
     Sending SendingMessage
     | Received RoomEvent
 
-extractMessageEvents : List RoomEvent -> List Message
-extractMessageEvents es = List.map Received
-    <| List.filter (\e -> e.type_ == "m.room.message") es
-
-messageUsername : Model -> Message -> Username
-messageUsername m msg = case msg of
-    Sending _ -> m.loginUsername
+messageUsername : Username -> Message -> Username
+messageUsername u msg = case msg of
+    Sending _ -> u
     Received re -> re.sender
 
-mergeMessages : Model -> List Message -> List (Username, List Message)
-mergeMessages m xs =
+mergeMessages : Username -> List Message -> List (Username, List Message)
+mergeMessages du xs =
     let
         initialState = (Nothing, [], [])
         appendNamed mu ms msl = case mu of
@@ -27,7 +22,7 @@ mergeMessages m xs =
             Nothing -> msl
         foldFunction msg (pu, ms, msl) =
             let
-                nu = Just <| messageUsername m msg
+                nu = Just <| messageUsername du msg
             in
                 if pu == nu then (pu, ms ++ [msg], msl) else (nu, [msg], appendNamed pu ms msl)
         (fmu, fms, fmsl) = List.foldl foldFunction initialState xs

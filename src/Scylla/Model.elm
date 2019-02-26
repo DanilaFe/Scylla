@@ -4,6 +4,7 @@ import Scylla.Sync exposing (SyncResponse, HistoryResponse, JoinedRoom, senderNa
 import Scylla.Login exposing (LoginResponse, Username, Password)
 import Scylla.UserData exposing (UserData)
 import Scylla.Route exposing (Route(..), RoomId)
+import Scylla.Messages exposing (..)
 import Scylla.Storage exposing (..)
 import Scylla.Markdown exposing (..)
 import Browser.Navigation as Nav
@@ -26,7 +27,8 @@ type alias Model =
     , apiUrl : ApiUrl
     , sync : SyncResponse
     , errors : List String
-    , roomText : Dict String String
+    , roomText : Dict RoomId String
+    , sending : Dict Int (RoomId, SendingMessage)
     , transactionId : Int
     , userData : Dict Username UserData
     , connected : Bool
@@ -42,7 +44,7 @@ type Msg =
     | ChangeRoute Route -- URL changes
     | ChangeRoomText String String -- Change to a room's input text
     | SendRoomText String -- Sends a message typed into a given room's input
-    | SendRoomTextResponse (Result Http.Error ()) -- A send message response finished
+    | SendRoomTextResponse Int (Result Http.Error ()) -- A send message response finished
     | ViewportAfterMessage (Result Browser.Dom.Error Viewport) -- A message has been received, try scroll (maybe)
     | ViewportChangeComplete (Result Browser.Dom.Error ()) -- We're done changing the viewport.
     | ReceiveFirstSyncResponse (Result Http.Error SyncResponse) -- HTTP, Sync has finished

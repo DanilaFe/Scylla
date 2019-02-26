@@ -140,8 +140,7 @@ loginView m = div [ class "login-wrapper" ]
 joinedRoomView : Model -> RoomId -> RoomData -> Html Msg
 joinedRoomView m roomId rd =
     let
-        events = Maybe.withDefault [] <| Maybe.andThen .events rd.joinedRoom.timeline
-        renderedMessages = List.map (userMessagesView m) <| mergeMessages m <| extractMessageEvents events
+        renderedMessages = List.map (userMessagesView m) <| mergeMessages m.loginUsername <| extractMessages rd
         messagesWrapper = messagesWrapperView m roomId renderedMessages
         typing = List.map (displayName m) <| roomTypingUsers rd.joinedRoom
         typingText = String.join ", " typing
