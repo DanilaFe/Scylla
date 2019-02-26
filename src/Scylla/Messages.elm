@@ -3,18 +3,20 @@ import Scylla.Model exposing (Model)
 import Scylla.Sync exposing (RoomEvent)
 import Scylla.Login exposing (Username)
 
+type SendingMessage = TextMessage String
+
 type Message =
-    SendingTextMessage String Int
-    | SyncMessage RoomEvent
+    Sending SendingMessage
+    | Received RoomEvent
 
 extractMessageEvents : List RoomEvent -> List Message
-extractMessageEvents es = List.map SyncMessage
+extractMessageEvents es = List.map Received
     <| List.filter (\e -> e.type_ == "m.room.message") es
 
 messageUsername : Model -> Message -> Username
 messageUsername m msg = case msg of
-    SendingTextMessage _ _ -> m.loginUsername
-    SyncMessage re -> re.sender
+    Sending _ -> m.loginUsername
+    Received re -> re.sender
 
 mergeMessages : Model -> List Message -> List (Username, List Message)
 mergeMessages m xs =

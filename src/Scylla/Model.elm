@@ -79,12 +79,12 @@ loginUrl = Url.Builder.absolute [ "login" ] []
 newUsers : Model -> List Username -> List Username
 newUsers m lus = List.filter (\u -> not <| Dict.member u m.userData) lus
 
+joinedRooms : Model -> Dict RoomId JoinedRoom
+joinedRooms m = Maybe.withDefault Dict.empty <| Maybe.andThen .join <| m.sync.rooms
+
 currentRoom : Model -> Maybe JoinedRoom
 currentRoom m =
-    let
-        roomDict = Maybe.withDefault Dict.empty <| Maybe.andThen .join <| m.sync.rooms
-    in
-        Maybe.andThen (\s -> Dict.get s roomDict) <| currentRoomId m
+    Maybe.andThen (\s -> Dict.get s <| joinedRooms m) <| currentRoomId m
 
 currentRoomId : Model -> Maybe RoomId
 currentRoomId m = case m.route of

@@ -3,6 +3,7 @@ import Scylla.Model exposing (..)
 import Scylla.Sync exposing (..)
 import Scylla.Route exposing (..)
 import Scylla.Fnv as Fnv
+import Scylla.Room exposing (..)
 import Scylla.Messages exposing (..)
 import Scylla.Login exposing (Username)
 import Scylla.Http exposing (fullMediaUrl)
@@ -42,9 +43,8 @@ stringColor s =
 viewFull : Model -> List (Html Msg)
 viewFull model = 
     let
-        room r = Maybe.map (\jr -> (r, jr))
-            <| Maybe.andThen (Dict.get r)
-            <| Maybe.andThen .join model.sync.rooms
+        room r = Maybe.map (\rd -> (r, rd))
+            <| roomData model r
         core = case model.route of
             Login -> loginView model 
             Base -> baseView model Nothing
@@ -60,7 +60,7 @@ errorsView = div [ class "errors-wrapper" ] << List.indexedMap errorView
 errorView : Int -> String -> Html Msg
 errorView i s = div [ class "error-wrapper", onClick <| DismissError i ] [ iconView "alert-triangle", text s ]
 
-baseView : Model -> Maybe (String, JoinedRoom) -> Html Msg
+baseView : Model -> Maybe (String, RoomData) -> Html Msg
 baseView m jr = 
     let
         roomView = Maybe.map (\(id, r) -> joinedRoomView m id r) jr
@@ -137,13 +137,13 @@ loginView m = div [ class "login-wrapper" ]
     , button [ onClick AttemptLogin ] [ text "Log In" ]
     ]
 
-joinedRoomView : Model -> RoomId -> JoinedRoom -> Html Msg
-joinedRoomView m roomId jr =
+joinedRoomView : Model -> RoomId -> RoomData -> Html Msg
+joinedRoomView m roomId rd =
     let
-        events = Maybe.withDefault [] <| Maybe.andThen .events jr.timeline
+        events = Maybe.withDefault [] <| Maybe.andThen .events rd.joinedRoom.timeline
         renderedMessages = List.map (userMessagesView m) <| mergeMessages m <| extractMessageEvents events
         messagesWrapper = messagesWrapperView m roomId renderedMessages
-        typing = List.map (displayName m) <| roomTypingUsers jr
+        typing = List.map (displayName m) <| roomTypingUsers rd.joinedRoom
         typingText = String.join ", " typing
         typingSuffix = case List.length typing of
             0 -> ""
@@ -163,7 +163,7 @@ joinedRoomView m roomId jr =
             ]
     in
         div [ class "room-wrapper" ]
-            [ h2 [] [ text <| Maybe.withDefault "<No Name>" <| roomName jr ]
+            [ h2 [] [ text <| Maybe.withDefault "<No Name>" <| roomName rd.joinedRoom ]
             , messagesWrapper
             , typingWrapper
             , messageInput
@@ -210,8 +210,12 @@ userMessagesView m (u, ms) =
 
 messageView : Model -> Message -> Maybe (Html Msg)
 messageView m msg = case msg of
-    SendingTextMessage t _ -> Just <| div [] [ text t ]
-    SyncMessage re -> roomEventView m re
+    Sending t -> Just <| sendingMessageView m t
+    Received re -> roomEventView m re
+
+sendingMessageView : Model -> SendingMessage -> Html Msg
+sendingMessageView m msg = case msg of
+    TextMessage t -> text t
 
 roomEventView : Model -> RoomEvent -> Maybe (Html Msg)
 roomEventView m re =
