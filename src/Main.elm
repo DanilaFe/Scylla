@@ -100,6 +100,9 @@ update msg model = case msg of
     DismissError i -> updateDismissError model i
     AttemptReconnect -> ({ model | connected = True }, firstSync model.apiUrl (Maybe.withDefault "" model.token))
 
+requestScrollCmd : Cmd Msg
+requestScrollCmd = Task.attempt ViewportAfterMessage (Browser.Dom.getViewportOf "messages-wrapper")
+
 updateDismissError : Model -> Int -> (Model, Cmd Msg)
 updateDismissError m i = ({ m | errors = (List.take i m.errors) ++ (List.drop (i+1) m.errors)}, Cmd.none)
 
@@ -115,7 +118,7 @@ updateMarkdown m { roomId, text, markdown } =
             , sending = Dict.insert (m.transactionId + 1) (roomId, TextMessage text) m.sending
             }
     in
-        (newModel, Cmd.batch [ storeValueCmd, sendMessageCmd ])
+        (newModel, Cmd.batch [ storeValueCmd, sendMessageCmd, requestScrollCmd ])
 
 updateFileUploadComplete : Model -> RoomId -> File -> (Result Http.Error String) -> (Model, Cmd Msg)
 updateFileUploadComplete m rid mime ur =
@@ -315,7 +318,7 @@ updateSyncResponse model r notify =
         setScrollCmd sr = if List.isEmpty 
             <| roomMessages sr
                 then Cmd.none
-                else Task.attempt ViewportAfterMessage (Browser.Dom.getViewportOf "messages-wrapper")
+                else requestScrollCmd
         setReadReceiptCmd sr = case (room, List.head <| List.reverse <| roomMessages sr) of
             (Just rid, Just re) -> setReadMarkers model.apiUrl token rid re.eventId <| Just re.eventId
             _ -> Cmd.none
