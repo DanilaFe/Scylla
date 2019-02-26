@@ -214,8 +214,10 @@ div.message-wrapper {
     }
 
     button {
-        flex-grow: 1;
         margin: 3px;
+        height: 40px;
+        width: 40px;
+        border-radius: 50px;
     }
 }
 
@@ -307,6 +309,7 @@ span.sender-wrapper {
  * Icons
  */
 .feather-icon {
+    vertical-align: middle;
     stroke: currentColor;
     stroke-width: 2;
     stroke-linecap: round;
