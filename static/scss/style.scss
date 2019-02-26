@@ -4,6 +4,7 @@ $primary-color-highlight: #4298C7;
 $primary-color-light: #9FDBFB;
 
 $background-color: #1b1e21;
+$background-color-light: lighten($background-color, 4%);
 $background-color-dark: darken($background-color, 4%);
 
 $error-color: #f01d43;
@@ -141,7 +142,7 @@ div.base-wrapper {
     height: 100%;
 
     > div {
-        padding: 5px;
+        padding: 10px;
         box-sizing: border-box;
     }
 }
@@ -151,6 +152,7 @@ div.base-wrapper {
  */
 div.rooms-wrapper {
     flex-shrink: 0;
+    background-color: $background-color-light;
 }
 
 div.room-link-wrapper {
@@ -186,6 +188,8 @@ div.room-wrapper {
     display: flex;
     height: 100%;
     flex-direction: column;  
+    box-shadow: inset 0px 0px 10px rgba(0, 0, 0, .50);
+    padding: 5px;
 }
 
 div.typing-wrapper {
