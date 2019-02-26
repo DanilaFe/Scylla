@@ -17,6 +17,8 @@ $inactive-input-border-color: darken($inactive-input-color, 10%);
 
 $transition-duration: .125s;
 
+$inset-shadow: inset 0px 0px 5px rgba(0, 0, 0, .25);
+
 html, body {
     height: 100vh;
 }
@@ -78,6 +80,7 @@ h2, h3 {
 }
 
 a.file-wrapper {
+    padding: 5px 0px 5px 0px;
     display: flex;
     align-items: center;
 
@@ -188,7 +191,7 @@ div.room-wrapper {
     display: flex;
     height: 100%;
     flex-direction: column;  
-    box-shadow: inset 0px 0px 10px rgba(0, 0, 0, .50);
+    box-shadow: $inset-shadow;
     padding: 5px;
 }
 
@@ -281,7 +284,7 @@ div.message {
         padding: 10px;
         background-color: $background-color;
         border-radius: 3px;
-        box-shadow: inset 0px 0px 5px rgba(0, 0, 0, .15);
+        box-shadow: $inset-shadow;
     }
 }
 
