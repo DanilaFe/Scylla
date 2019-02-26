@@ -10,9 +10,9 @@ $background-color-dark: darken($background-color, 4%);
 $error-color: #f01d43;
 $error-color-dark: darken(#f01d43, 10%);
 
-$active-input-color: #282d30;
+$active-input-color: lighten($background-color-light, 2%);
 $active-input-border-color: $primary-color;
-$inactive-input-color: darken($active-input-color, 3%);
+$inactive-input-color: $background-color-light;
 $inactive-input-border-color: darken($inactive-input-color, 10%);
 
 $transition-duration: .125s;
@@ -284,7 +284,7 @@ div.message {
         display: block;
         box-sizing: border-box;
         padding: 10px;
-        background-color: $background-color;
+        background-color: $background-color-dark;
         border-radius: 3px;
         box-shadow: $inset-shadow;
     }
