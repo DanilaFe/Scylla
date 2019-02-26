@@ -252,10 +252,6 @@ table.messages-table {
         }
         white-space: nowrap;
     }
-
-    tr:nth-child(2n) {
-        background-color: $background-color-dark;
-    }
 }
 
 div.message {
