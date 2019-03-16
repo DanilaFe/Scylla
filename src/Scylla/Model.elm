@@ -44,7 +44,7 @@ type Msg =
     | ChangeRoute Route -- URL changes
     | ChangeRoomText String String -- Change to a room's input text
     | SendRoomText String -- Sends a message typed into a given room's input
-    | SendRoomTextResponse Int (Result Http.Error ()) -- A send message response finished
+    | SendRoomTextResponse Int (Result Http.Error String) -- A send message response finished
     | ViewportAfterMessage (Result Browser.Dom.Error Viewport) -- A message has been received, try scroll (maybe)
     | ViewportChangeComplete (Result Browser.Dom.Error ()) -- We're done changing the viewport.
     | ReceiveFirstSyncResponse (Result Http.Error SyncResponse) -- HTTP, Sync has finished
@@ -63,8 +63,8 @@ type Msg =
     | FilesSelected RoomId File (List File)
     | ImageUploadComplete RoomId File (Result Http.Error String)
     | FileUploadComplete RoomId File (Result Http.Error String)
-    | SendImageResponse (Result Http.Error ())
-    | SendFileResponse (Result Http.Error ())
+    | SendImageResponse (Result Http.Error String)
+    | SendFileResponse (Result Http.Error String)
     | ReceiveMarkdown MarkdownResponse
     | DismissError Int
     | AttemptReconnect

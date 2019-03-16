@@ -7,6 +7,7 @@ import Scylla.Login exposing (loginResponseDecoder, Username, Password)
 import Scylla.UserData exposing (userDataDecoder, UserData)
 import Url.Builder
 import Json.Encode exposing (object, string, int, bool, list)
+import Json.Decode as Decode exposing (field)
 import Http exposing (request, emptyBody, jsonBody, fileBody, expectJson, expectWhatever)
 import File exposing (File, name, mime)
 import Url.Builder as Builder
@@ -75,7 +76,7 @@ getHistory apiUrl token room prevBatch = request
     , tracker = Nothing
     }
 
-sendMessage : ApiUrl -> ApiToken -> Int -> RoomId -> (Result Http.Error () -> Msg) -> List (String, Json.Encode.Value) -> Cmd Msg
+sendMessage : ApiUrl -> ApiToken -> Int -> RoomId -> (Result Http.Error String -> Msg) -> List (String, Json.Encode.Value) -> Cmd Msg
 sendMessage apiUrl token transactionId room msg contents = request
     { method = "PUT"
     , headers = authenticatedHeaders token
@@ -84,7 +85,7 @@ sendMessage apiUrl token transactionId room msg contents = request
         ++ "/send/" ++ "m.room.message"
         ++ "/" ++ (String.fromInt transactionId)
     , body = jsonBody <| object contents
-    , expect = expectWhatever msg
+    , expect = expectJson msg (field "event_id" Decode.string)
     , timeout = Nothing
     , tracker = Nothing
     }
