@@ -87,7 +87,7 @@ update msg model = case msg of
     ReceiveUserData s r -> updateUserData model s r
     ChangeRoomText r t -> updateChangeRoomText model r t
     SendRoomText r -> updateSendRoomText model r
-    SendRoomTextResponse t r -> ({ model | sending = Dict.remove t model.sending }, Cmd.none)
+    SendRoomTextResponse t r -> updateSendRoomTextResponse model t r
     ReceiveCompletedReadMarker r -> (model, Cmd.none)
     ReceiveCompletedTypingIndicator r -> (model, Cmd.none)
     ReceiveStoreData d -> updateStoreData model d
@@ -108,6 +108,17 @@ update msg model = case msg of
 
 requestScrollCmd : Cmd Msg
 requestScrollCmd = Task.attempt ViewportAfterMessage (Browser.Dom.getViewportOf "messages-wrapper")
+
+updateSendRoomTextResponse : Model -> Int -> Result Http.Error String -> (Model, Cmd Msg)
+updateSendRoomTextResponse m t r =
+    let
+        updateFunction newId msg = case msg of
+            Just (rid, { body, id }) -> Just (rid, { body = body, id = Just newId })
+            Nothing -> Nothing
+    in
+        case r of
+            Ok s -> ({ m | sending = Dict.update t (updateFunction s) m.sending }, Cmd.none)
+            Err e -> ({ m | sending = Dict.remove t m.sending }, Cmd.none) 
 
 updateDismissError : Model -> Int -> (Model, Cmd Msg)
 updateDismissError m i = ({ m | errors = (List.take i m.errors) ++ (List.drop (i+1) m.errors)}, Cmd.none)
@@ -328,9 +339,11 @@ updateSyncResponse model r notify =
         setReadReceiptCmd sr = case (room, List.head <| List.reverse <| roomMessages sr) of
             (Just rid, Just re) -> setReadMarkers model.apiUrl token rid re.eventId <| Just re.eventId
             _ -> Cmd.none
+        receivedEvents sr = List.map Just <| allTimelineEventIds sr
+        sending sr = Dict.filter (\_ (rid, { body, id }) -> not <| List.member id <| receivedEvents sr) model.sending
     in
         case r of
-            Ok sr -> ({ model | sync = mergeSyncResponse model.sync sr }, Cmd.batch
+            Ok sr -> ({ model | sync = mergeSyncResponse model.sync sr, sending = sending (mergeSyncResponse model.sync sr) }, Cmd.batch
                 [ syncCmd
                 , newUserCmd sr
                 , notificationCmd sr

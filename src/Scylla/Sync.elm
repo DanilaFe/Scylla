@@ -476,6 +476,9 @@ allRoomDictTimelineEvents dict = List.concatMap (Maybe.withDefault [] << .events
     <| List.filterMap .timeline
     <| Dict.values dict
 
+allTimelineEventIds : SyncResponse -> List String
+allTimelineEventIds s = List.map .eventId <| allTimelineEvents s
+
 allTimelineEvents : SyncResponse -> List RoomEvent
 allTimelineEvents s =
     let
