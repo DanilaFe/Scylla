@@ -2,7 +2,12 @@ module Scylla.Messages exposing (..)
 import Scylla.Sync exposing (RoomEvent)
 import Scylla.Login exposing (Username)
 
-type SendingMessage = TextMessage String
+type SendingMessageBody = TextMessage String
+
+type alias SendingMessage =
+    { body : SendingMessageBody
+    , id : Maybe String
+    }
 
 type Message =
     Sending SendingMessage

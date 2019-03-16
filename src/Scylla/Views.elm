@@ -213,7 +213,7 @@ messageView m msg = case msg of
     Received re -> roomEventView m re
 
 sendingMessageView : Model -> SendingMessage -> Html Msg
-sendingMessageView m msg = case msg of
+sendingMessageView m msg = case msg.body of
     TextMessage t -> text t
 
 roomEventView : Model -> RoomEvent -> Maybe (Html Msg)

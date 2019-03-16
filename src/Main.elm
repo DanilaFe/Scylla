@@ -121,7 +121,7 @@ updateMarkdown m { roomId, text, markdown } =
         sendMessageCmd = sendMarkdownMessage m.apiUrl (Maybe.withDefault "" m.token) (m.transactionId + 1) roomId text markdown
         newModel =
             { m | transactionId = m.transactionId + 1
-            , sending = Dict.insert (m.transactionId + 1) (roomId, TextMessage text) m.sending
+            , sending = Dict.insert (m.transactionId + 1) (roomId, { body = TextMessage text, id = Nothing }) m.sending
             }
     in
         (newModel, Cmd.batch [ storeValueCmd, sendMessageCmd, requestScrollCmd ])
