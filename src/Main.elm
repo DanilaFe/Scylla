@@ -94,7 +94,7 @@ update msg model = case msg of
     TypingTick _ -> updateTypingTick model
     History r -> updateHistory model r
     ReceiveHistoryResponse r hr -> updateHistoryResponse model r hr
-    SendImages rid -> (model, Select.files [ "image/png" ] <| ImagesSelected rid)
+    SendImages rid -> (model, Select.files [ "image/jpeg", "image/png", "image/gif" ] <| ImagesSelected rid)
     SendFiles rid -> (model, Select.files [ "application/*" ] <| FilesSelected rid)
     ImagesSelected rid f fs -> updateUploadSelected model rid f fs (ImageUploadComplete rid)
     FilesSelected rid f fs -> updateUploadSelected model rid f fs (FileUploadComplete rid)
