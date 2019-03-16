@@ -60,9 +60,15 @@ init _ url key =
 
 view : Model -> Browser.Document Msg
 view m =
-    { title = "Scylla"
-    , body = viewFull m
-    }
+    let
+        notificationString = totalNotificationCountString m.sync
+        titleString = case notificationString of
+            Nothing -> "Scylla"
+            Just s -> s ++ " Scylla"
+    in 
+        { title = titleString
+        , body = viewFull m
+        }
 
 update : Msg -> Model -> (Model, Cmd Msg)
 update msg model = case msg of

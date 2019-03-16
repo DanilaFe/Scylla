@@ -493,6 +493,32 @@ joinedRoomsTimelineEvents s =
     <| Maybe.map (Dict.map (\k v -> Maybe.withDefault [] <| Maybe.andThen .events v.timeline))
     <| Maybe.andThen .join s.rooms
 
+totalNotificationCountString : SyncResponse -> Maybe String
+totalNotificationCountString sr =
+    let
+        (h, n) = totalNotificationCounts sr
+        suffix = case h of
+            0 -> ""
+            _ -> "!"
+    in
+        case n of
+            0 -> Nothing
+            _ -> Just <| "(" ++ String.fromInt n ++ suffix ++ ")"
+
+totalNotificationCounts : SyncResponse -> (Int, Int)
+totalNotificationCounts sr =
+    let
+        rooms = Maybe.withDefault []
+            <| Maybe.map (Dict.values)
+            <| Maybe.andThen (.join) sr.rooms
+        zeroDefault = Maybe.withDefault 0
+        getCounts = Maybe.map (\cs -> (zeroDefault cs.highlightCount, zeroDefault cs.notificationCount))
+            << .unreadNotifications
+        sumCounts (h1, n1) (h2, n2) = (h1 + h2, n1 + n2)
+    in
+        List.foldl sumCounts (0, 0)
+            <| List.filterMap getCounts rooms
+
 -- Business Logic: Room Info
 roomAccountData : JoinedRoom -> String -> Maybe Decode.Value
 roomAccountData jr et =
