@@ -214,7 +214,7 @@ messageView m msg = case msg of
 
 sendingMessageView : Model -> SendingMessage -> Html Msg
 sendingMessageView m msg = case msg.body of
-    TextMessage t -> text t
+    TextMessage t -> span [ class "sending"] [ text t ]
 
 roomEventView : Model -> RoomEvent -> Maybe (Html Msg)
 roomEventView m re =
