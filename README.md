@@ -1,5 +1,5 @@
 # Scylla
-A minimalist client for the Matrix chat protocol.
+A minimalist client for the Matrix chat protocol. Come chat with me: #scylla:riot.danilafe.com
 
 ## Screenshots
 ![Main View](screenshots/screenshot-1.png)
