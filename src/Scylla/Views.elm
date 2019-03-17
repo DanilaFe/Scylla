@@ -15,7 +15,7 @@ import Svg.Attributes
 import Url.Builder
 import Json.Decode as Decode
 import Html exposing (Html, Attribute, div, input, text, button, div, span, a, h2, h3, table, td, tr, img, textarea, video, source, p)
-import Html.Attributes exposing (type_, value, href, class, style, src, id, rows, controls, src)
+import Html.Attributes exposing (type_, placeholder, value, href, class, style, src, id, rows, controls, src)
 import Html.Events exposing (onInput, onClick, preventDefaultOn)
 import Dict exposing (Dict)
 import Tuple
@@ -131,8 +131,8 @@ roomNotificationCountView ns =
 loginView : Model -> Html Msg
 loginView m = div [ class "login-wrapper" ]
     [ h2 [] [ text "Log In" ]
-    , input [ type_ "text", value m.loginUsername, onInput ChangeLoginUsername] []
-    , input [ type_ "password", value m.loginPassword, onInput ChangeLoginPassword ] []
+    , input [ type_ "text", placeholder "Username", value m.loginUsername, onInput ChangeLoginUsername] []
+    , input [ type_ "password", placeholder "Password", value m.loginPassword, onInput ChangeLoginPassword ] []
     , input [ type_ "text", value m.apiUrl, onInput ChangeApiUrl ] []
     , button [ onClick AttemptLogin ] [ text "Log In" ]
     ]
