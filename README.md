@@ -1,5 +1,5 @@
 # Scylla
-A minimalist client for the Matrix chat protocol. Come chat with me: #scylla:riot.danilafe.com
+A minimalist client for the Matrix chat protocol. Come chat with me: [![#scylla:riot.danilafe.com](https://img.shields.io/matrix/scylla:riot.danilafe.com.svg?label=%23scylla:riot.danilafe.com&server_fqdn=matrix.org)](https://matrix.to/#/#scylla:riot.danilafe.com)
 
 ## Screenshots
 ![Main View](screenshots/screenshot-1.png)
