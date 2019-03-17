@@ -1,4 +1,17 @@
-/elm-stuff
 /static/js/elm.js
-/static/css/
-/.sass-cache
+/static/css/style.css
+
+# Created by https://www.gitignore.io/api/elm,sass
+# Edit at https://www.gitignore.io/?templates=elm,sass
+
+### Elm ###
+# elm-package generated files
+elm-stuff
+# elm-repl generated files
+repl-temp-*
+
+### Sass ###
+.sass-cache/
+*.css.map
+*.sass.map
+*.scss.map
