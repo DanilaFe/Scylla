@@ -133,7 +133,7 @@ loginView m = div [ class "login-wrapper" ]
     [ h2 [] [ text "Log In" ]
     , input [ type_ "text", placeholder "Username", value m.loginUsername, onInput ChangeLoginUsername] []
     , input [ type_ "password", placeholder "Password", value m.loginPassword, onInput ChangeLoginPassword ] []
-    , input [ type_ "text", value m.apiUrl, onInput ChangeApiUrl ] []
+    , input [ type_ "text", placeholder "Homeserver URL", value m.apiUrl, onInput ChangeApiUrl ] []
     , button [ onClick AttemptLogin ] [ text "Log In" ]
     ]
 
