@@ -86,7 +86,7 @@ roomListView m =
         groups = roomGroups
             <| Dict.toList rooms
         homeserverList = div [ class "homeservers-list" ]
-            <| List.map (\(k, v) -> homeserverView k v)
+            <| List.map (\(k, v) -> homeserverView m k v)
             <| Dict.toList groups
     in
         div [ class "rooms-wrapper" ]
@@ -97,17 +97,24 @@ roomListView m =
 roomGroups : List (String, JoinedRoom) -> Dict String (List (String, JoinedRoom))
 roomGroups jrs = groupBy (homeserver << Tuple.first) jrs
 
-homeserverView : String -> List (String, JoinedRoom) -> Html Msg
-homeserverView hs rs =
+homeserverView : Model -> String -> List (String, JoinedRoom) -> Html Msg
+homeserverView m hs rs =
     let
-        roomList = div [ class "rooms-list" ] <| List.map (\(rid, r) -> roomListElementView rid r) rs
+        roomList = div [ class "rooms-list" ] <| List.map (\(rid, r) -> roomListElementView m rid r) rs
     in
         div [ class "homeserver-wrapper" ] [ h3 [] [ text hs ], roomList ]
 
-roomListElementView : String -> JoinedRoom -> Html Msg
-roomListElementView s jr =
+roomListElementView : Model -> String -> JoinedRoom -> Html Msg
+roomListElementView m s jr =
     let
-        name = Maybe.withDefault "<No Name>"  <| roomName jr
+        roomUsers = List.filter ((/=) m.loginUsername) <| roomJoinedUsers jr
+        privateChatName = case (List.length roomUsers) of
+            1 -> Maybe.andThen (\u -> Maybe.andThen .displayName <| Dict.get u m.userData) <| List.head roomUsers
+            _ -> Nothing
+        maybeRoomName = case roomName jr of
+            Just rn -> Just rn
+            Nothing -> privateChatName
+        name = Maybe.withDefault "<No Name>" maybeRoomName
     in
         div [ class "room-link-wrapper" ]
             [ a [ href <| roomUrl s ] [ text name ]

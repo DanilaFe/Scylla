@@ -547,3 +547,14 @@ roomTypingUsers jr = Maybe.withDefault []
 -- Business Logic: Users
 allUsers : SyncResponse -> List Username
 allUsers s = uniqueBy (\u -> u) <| List.map .sender <| allTimelineEvents s
+
+roomJoinedUsers : JoinedRoom -> List Username
+roomJoinedUsers r = 
+    let
+        contentDecoder = Decode.field "membership" Decode.string
+        isJoin e = Ok "join" == (Decode.decodeValue contentDecoder e.content)
+    in
+        List.map .sender
+        <| List.filter isJoin
+        <| List.filter (((==) "m.room.member") << .type_)
+        <| allRoomStateEvents r

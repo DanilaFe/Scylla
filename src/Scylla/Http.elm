@@ -17,7 +17,7 @@ firstSyncFilter : Json.Decode.Value
 firstSyncFilter = object
     [ ("room", object
         [ ("state", object
-            [ ("types", list string [ "m.room.name" ])
+            [ ("types", list string [ "m.room.name", "m.room.member" ])
             ])
         ])
     ]
