@@ -100,7 +100,9 @@ roomGroups jrs = groupBy (homeserver << Tuple.first) jrs
 homeserverView : Model -> String -> List (String, JoinedRoom) -> Html Msg
 homeserverView m hs rs =
     let
-        roomList = div [ class "rooms-list" ] <| List.map (\(rid, r) -> roomListElementView m rid r) rs
+        roomList = div [ class "rooms-list" ]
+            <| List.map (\(rid, r) -> roomListElementView m rid r)
+            <| List.sortBy (\(rid, r) -> roomDisplayName m r) rs
     in
         div [ class "homeserver-wrapper" ] [ h3 [] [ text hs ], roomList ]
 
