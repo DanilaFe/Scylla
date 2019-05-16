@@ -1,6 +1,6 @@
 module Scylla.Model exposing (..)
 import Scylla.Api exposing (..)
-import Scylla.Sync exposing (SyncResponse, HistoryResponse, JoinedRoom, senderName)
+import Scylla.Sync exposing (SyncResponse, HistoryResponse, JoinedRoom, senderName, roomName, roomJoinedUsers)
 import Scylla.Login exposing (LoginResponse, Username, Password)
 import Scylla.UserData exposing (UserData)
 import Scylla.Route exposing (Route(..), RoomId)
@@ -71,6 +71,25 @@ type Msg =
 
 displayName : Model -> Username -> String
 displayName m s = Maybe.withDefault (senderName s) <| Maybe.andThen .displayName <| Dict.get s m.userData
+
+roomDisplayName : Model -> JoinedRoom -> String
+roomDisplayName m jr =
+    let
+        customName = roomName jr
+        roomUsers = List.filter ((/=) m.loginUsername) <| roomJoinedUsers jr
+        singleUserName = if List.length roomUsers == 1 then List.head roomUsers else Nothing
+        singleUserDisplayName = Maybe.andThen
+            (\u -> Maybe.andThen .displayName <| Dict.get u m.userData) singleUserName
+        firstOption d os = case os of
+            [] -> d
+            ((Just v)::_) -> v
+            (Nothing::xs) -> firstOption d xs
+    in
+        firstOption "<No Name>"
+            [ customName
+            , singleUserDisplayName
+            , singleUserName
+            ]
 
 roomUrl : String -> String
 roomUrl s = Url.Builder.absolute [ "room", s ] []

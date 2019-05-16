@@ -107,14 +107,7 @@ homeserverView m hs rs =
 roomListElementView : Model -> String -> JoinedRoom -> Html Msg
 roomListElementView m s jr =
     let
-        roomUsers = List.filter ((/=) m.loginUsername) <| roomJoinedUsers jr
-        privateChatName = case (List.length roomUsers) of
-            1 -> Maybe.andThen (\u -> Maybe.andThen .displayName <| Dict.get u m.userData) <| List.head roomUsers
-            _ -> Nothing
-        maybeRoomName = case roomName jr of
-            Just rn -> Just rn
-            Nothing -> privateChatName
-        name = Maybe.withDefault "<No Name>" maybeRoomName
+        name = roomDisplayName m jr
     in
         div [ class "room-link-wrapper" ]
             [ a [ href <| roomUrl s ] [ text name ]
@@ -169,7 +162,7 @@ joinedRoomView m roomId rd =
             ]
     in
         div [ class "room-wrapper" ]
-            [ h2 [] [ text <| Maybe.withDefault "<No Name>" <| roomName rd.joinedRoom ]
+            [ h2 [] [ text <| roomDisplayName m rd.joinedRoom ]
             , messagesWrapper
             , typingWrapper
             , messageInput
