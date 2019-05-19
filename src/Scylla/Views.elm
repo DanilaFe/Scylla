@@ -15,7 +15,7 @@ import Svg.Attributes
 import Url.Builder
 import Json.Decode as Decode
 import Html exposing (Html, Attribute, div, input, text, button, div, span, a, h2, h3, table, td, tr, img, textarea, video, source, p)
-import Html.Attributes exposing (type_, placeholder, value, href, class, style, src, id, rows, controls, src)
+import Html.Attributes exposing (type_, placeholder, value, href, class, style, src, id, rows, controls, src, classList)
 import Html.Events exposing (onInput, onClick, preventDefaultOn)
 import Dict exposing (Dict)
 import Tuple
@@ -110,8 +110,15 @@ roomListElementView : Model -> String -> JoinedRoom -> Html Msg
 roomListElementView m s jr =
     let
         name = roomDisplayName m jr
+        isCurrentRoom = case currentRoomId m of
+            Nothing -> False
+            Just cr -> cr == s
     in
-        div [ class "room-link-wrapper" ]
+        div [ classList
+                [ ("room-link-wrapper", True)
+                , ("active", isCurrentRoom)
+                ]
+            ]
             [ a [ href <| roomUrl s ] [ text name ]
             , roomNotificationCountView jr.unreadNotifications
             ]

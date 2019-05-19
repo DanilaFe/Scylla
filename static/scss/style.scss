@@ -2,20 +2,19 @@
 $primary-color: #53C0FA;
 $primary-color-highlight: #4298C7;
 $primary-color-light: #9FDBFB;
-
 $background-color: #1b1e21;
 $background-color-light: lighten($background-color, 4%);
 $background-color-dark: darken($background-color, 4%);
-
 $error-color: #f01d43;
 $error-color-dark: darken(#f01d43, 10%);
-
 $inactive-input-color: lighten($background-color-light, 5%);
 $active-input-color: lighten($inactive-input-color, 5%);
 
 $transition-duration: .250s;
 
 $inset-shadow: inset 0px 0px 5px rgba(0, 0, 0, .25);
+
+$border-radius: 3px;
 
 html, body {
     height: 100vh;
@@ -31,7 +30,7 @@ body {
 
 @mixin input-common {
     padding: 5px;
-    border-radius: 3px;
+    border-radius: $border-radius;
     outline: none;
 
     font-family: inherit;
@@ -163,9 +162,22 @@ div.room-link-wrapper {
     whitespace: nowrap;
     display: flex;
     padding: 0px;
+    border-left: solid 2px $background-color-light;
+    padding-left: 5px;
+    margin: 3px;
+    align-items: center;
 
     span, a {
         margin-right: 5px;
+        color: lightgrey;
+    }
+
+    &:hover a {
+        color: $primary-color;
+    }
+
+    &.active {
+        border-left: solid 2px $primary-color;
     }
 }
 
@@ -176,7 +188,7 @@ div.reconnect-wrapper {
     display: flex;
     align-items: center;
     background-color: $inactive-input-color;
-    border-radius: 3px;
+    border-radius: $border-radius;
 
     .feather-icon {
         margin-right: 10px;
@@ -290,13 +302,13 @@ div.message {
         box-sizing: border-box;
         padding: 10px;
         background-color: $background-color-dark;
-        border-radius: 3px;
+        border-radius: $border-radius;
         box-shadow: $inset-shadow;
     }
 }
 
 span.sender-wrapper {
-    border-radius: 3px;
+    border-radius: $border-radius;
     padding-left: 5px;
     padding-right: 5px;
     display: inline-block;
