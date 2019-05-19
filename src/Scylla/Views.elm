@@ -91,6 +91,7 @@ roomListView m =
     in
         div [ class "rooms-wrapper" ]
             [ h2 [] [ text "Rooms" ]
+            , input [ class "room-search", type_ "text", placeholder "Search chats..." ] []
             , homeserverList
             ]
 

@@ -156,6 +156,12 @@ div.base-wrapper {
 div.rooms-wrapper {
     flex-shrink: 0;
     background-color: $background-color-light;
+
+    .room-search {
+        padding: 5px;
+        width: 100%;
+        box-sizing: border-box;
+    }
 }
 
 div.room-link-wrapper {
