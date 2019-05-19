@@ -156,6 +156,7 @@ joinedRoomView m roomId rd =
                 [ rows 1
                 , onInput <| ChangeRoomText roomId
                 , onEnterKey <| SendRoomText roomId
+                , placeholder "Type your message here..."
                 , value <| Maybe.withDefault "" <| Dict.get roomId m.roomText
                 ]  []
             , button [ onClick <| SendFiles roomId ] [ iconView "file" ]
@@ -166,8 +167,8 @@ joinedRoomView m roomId rd =
         div [ class "room-wrapper" ]
             [ h2 [] [ text <| roomDisplayName m rd.joinedRoom ]
             , messagesWrapper
-            , typingWrapper
             , messageInput
+            , typingWrapper
             ]
 
 onEnterKey : Msg -> Attribute Msg
