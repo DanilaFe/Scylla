@@ -91,7 +91,13 @@ roomListView m =
     in
         div [ class "rooms-wrapper" ]
             [ h2 [] [ text "Rooms" ]
-            , input [ class "room-search", type_ "text", placeholder "Search chats..." ] []
+            , input
+                [ class "room-search"
+                , type_ "text"
+                , placeholder "Search chats..."
+                , onInput UpdateSearchText 
+                , value m.searchText
+                ] []
             , homeserverList
             ]
 
@@ -111,6 +117,7 @@ roomListElementView : Model -> String -> JoinedRoom -> Html Msg
 roomListElementView m s jr =
     let
         name = roomDisplayName m jr
+        isVisible = m.searchText == "" || (String.contains (String.toLower m.searchText) <| String.toLower name)
         isCurrentRoom = case currentRoomId m of
             Nothing -> False
             Just cr -> cr == s
@@ -118,6 +125,7 @@ roomListElementView m s jr =
         div [ classList
                 [ ("room-link-wrapper", True)
                 , ("active", isCurrentRoom)
+                , ("hidden", not isVisible)
                 ]
             ]
             [ a [ href <| roomUrl s ] [ text name ]

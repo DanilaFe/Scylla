@@ -32,6 +32,7 @@ type alias Model =
     , transactionId : Int
     , userData : Dict Username UserData
     , connected : Bool
+    , searchText : String
     }
 
 type Msg =
@@ -68,6 +69,7 @@ type Msg =
     | ReceiveMarkdown MarkdownResponse
     | DismissError Int
     | AttemptReconnect
+    | UpdateSearchText String
 
 displayName : Model -> Username -> String
 displayName m s = Maybe.withDefault (senderName s) <| Maybe.andThen .displayName <| Dict.get s m.userData

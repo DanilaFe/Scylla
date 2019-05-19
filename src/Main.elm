@@ -53,6 +53,7 @@ init _ url key =
             , transactionId = 0
             , userData = Dict.empty
             , connected = True
+            , searchText = ""
             }
         cmd = getStoreValuePort "scylla.loginInfo"
     in
@@ -105,6 +106,7 @@ update msg model = case msg of
     ReceiveMarkdown md -> updateMarkdown model md
     DismissError i -> updateDismissError model i
     AttemptReconnect -> ({ model | connected = True }, firstSync model.apiUrl (Maybe.withDefault "" model.token))
+    UpdateSearchText s -> ({ model | searchText = s }, Cmd.none)
 
 requestScrollCmd : Cmd Msg
 requestScrollCmd = Task.attempt ViewportAfterMessage (Browser.Dom.getViewportOf "messages-wrapper")
