@@ -195,6 +195,9 @@ div.room-link-wrapper {
 
     a {
         color: lightgrey;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
     }
 
     &:hover a {
