@@ -7,6 +7,8 @@ $background-color-light: lighten($background-color, 4%);
 $background-color-dark: darken($background-color, 4%);
 $error-color: #f01d43;
 $error-color-dark: darken(#f01d43, 10%);
+$alert-color: #18f49c;
+$alert-color-bright: rgb(240, 244, 24);
 $inactive-input-color: lighten($background-color-light, 5%);
 $active-input-color: lighten($inactive-input-color, 5%);
 
@@ -174,9 +176,23 @@ div.room-link-wrapper {
     padding-left: 5px;
     margin: 3px;
     align-items: center;
+
+    .feather-icon {
+        margin-right: 3px;
+    }
     
-    span, a {
+    span {
+        color: $alert-color;
+        display: flex;
+        align-items: center;
         margin-right: 5px;
+
+        &.bright {
+            color: $alert-color-bright;
+        }
+    }
+
+    a {
         color: lightgrey;
     }
 

@@ -128,23 +128,24 @@ roomListElementView m s jr =
                 , ("hidden", not isVisible)
                 ]
             ]
-            [ a [ href <| roomUrl s ] [ text name ]
-            , roomNotificationCountView jr.unreadNotifications
-            ]
+            <| roomNotificationCountView jr.unreadNotifications ++
+                [ a [ href <| roomUrl s ] [ text name ] ]
 
-roomNotificationCountView : Maybe UnreadNotificationCounts -> Html Msg
+roomNotificationCountView : Maybe UnreadNotificationCounts -> List (Html Msg)
 roomNotificationCountView ns =
     let
-        spanNumber = case Maybe.andThen .notificationCount ns of
-            Nothing -> ""
-            Just 0 -> ""
-            Just i -> String.fromInt i
-        spanSuffix = case Maybe.andThen .highlightCount ns of
-            Nothing -> ""
-            Just 0 -> ""
-            Just i -> "!"
+        wrap b = span
+            [ classList
+                [ ("notification-count", True)
+                , ("bright", b)
+                ]
+            ]
+        getCount f = Maybe.withDefault 0 << Maybe.andThen f
     in
-        span [ class "notification-count" ] [ text (spanNumber ++ spanSuffix) ]
+        case (getCount .notificationCount ns, getCount .highlightCount ns) of
+            (0, 0) -> []
+            (i, 0) -> [ wrap False [ iconView "bell", text <| String.fromInt i ] ]
+            (i, j) -> [ wrap True [ iconView "alert-circle", text <| String.fromInt i ] ] 
 
 loginView : Model -> Html Msg
 loginView m = div [ class "login-wrapper" ]
