@@ -155,6 +155,8 @@ div.base-wrapper {
  */
 div.rooms-wrapper {
     flex-shrink: 0;
+    width: 15%;
+    min-width: 200px;
     background-color: $background-color-light;
 
     .room-search {
