@@ -26,24 +26,10 @@ eventDecoder =
         |> required "content" value
         |> required "type" string
 
-type alias EventContent =
-    { avatarUrl : Maybe String
-    , displayname : Maybe String
-    , membership : String
-    , isDirect : Maybe Bool
-    -- , thirdPartyInvite : Invite
-    , unsigned : Maybe UnsignedData
-    }
+type alias EventContent = Decode.Value
 
 eventContentDecoder : Decoder EventContent
-eventContentDecoder =
-    Decode.succeed EventContent
-        |> maybeDecode "avatar_url" string
-        |> maybeDecode "displayname" string
-        |> required "membership" string
-        |> maybeDecode "is_direct" bool
-        -- |> required "third_party_invite" inviteDecoder
-        |> maybeDecode "unsigned" unsignedDataDecoder
+eventContentDecoder = Decode.value
 
 -- Unsigned Data
 type alias UnsignedData =
