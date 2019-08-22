@@ -1,22 +1,7 @@
 @import url('https://fonts.googleapis.com/css?family=Open+Sans|Source+Code+Pro');
-$primary-color: #53C0FA;
-$primary-color-highlight: #4298C7;
-$primary-color-light: #9FDBFB;
-$background-color: #1b1e21;
-$background-color-light: lighten($background-color, 4%);
-$background-color-dark: darken($background-color, 4%);
-$error-color: #f01d43;
-$error-color-dark: darken(#f01d43, 10%);
-$alert-color: #18f49c;
-$alert-color-bright: rgb(240, 244, 24);
-$inactive-input-color: lighten($background-color-light, 5%);
-$active-input-color: lighten($inactive-input-color, 5%);
-
-$transition-duration: .250s;
-
-$inset-shadow: inset 0px 0px 5px rgba(0, 0, 0, .25);
-
-$border-radius: 3px;
+@import 'mixins';
+@import 'variables';
+@import 'components';
 
 html, body {
     height: 100vh;
@@ -28,19 +13,6 @@ body {
     background-color: $background-color;
     font-size: 12px;
     color: white;
-}
-
-@mixin input-common {
-    padding: 5px;
-    border-radius: $border-radius;
-    outline: none;
-
-    font-family: inherit;
-    font-size: inherit;
-
-    &:focus {
-        transition: background-color $transition-duration;
-    }
 }
 
 input, textarea {
@@ -68,6 +40,7 @@ button {
     }
 }
 
+
 a {
     text-decoration: none;
     color: $primary-color;
@@ -77,23 +50,14 @@ a {
     }
 }
 
-h2, h3 {
+h1, h2, h3, h4, h5, h6 {
     margin: 0px;
     margin-bottom: 3px;
 }
 
-a.file-wrapper {
-    padding: 5px 0px 5px 0px;
-    display: flex;
-    align-items: center;
-
-    .feather-icon {
-        height: 30px;
-        width: 30px;
-        margin-right: 10px;
-    }
-}
-
+/*
+ * Errors
+ */
 div.errors-wrapper {
     position: fixed;
     pointer-events: none;
@@ -147,21 +111,22 @@ div.login-wrapper {
 div.base-wrapper {
     display: flex;
     height: 100%;
-
-    > div {
-        padding: 10px;
-        box-sizing: border-box;
-    }
 }
 
 /*
  * The list of rooms
  */
+div.rooms-container {
+    border-right: 1px solid $background-color-dark;
+}
+
 div.rooms-wrapper {
     flex-shrink: 0;
     width: 15%;
     min-width: 200px;
-    background-color: $background-color-light;
+    padding: 10px;
+    box-sizing: border-box;
+    border-right: 1px solid $background-color-dark;
 
     .room-search {
         padding: 5px;
@@ -172,23 +137,21 @@ div.rooms-wrapper {
 
 div.room-link-wrapper {
     whitespace: nowrap;
-    display: flex;
-    padding: 0px;
-    border-left: solid 2px $background-color-light;
+    border-left: solid 2px $background-color;
     padding-left: 5px;
     margin: 3px;
+    display: flex;
     align-items: center;
-
+    
     .feather-icon {
-        margin-right: 3px;
         height: 1.2em;
     }
-    
-    span {
+
+    span.notification-count {
         color: $alert-color;
+        margin-right: 5px;
         display: flex;
         align-items: center;
-        margin-right: 5px;
 
         &.bright {
             color: $alert-color-bright;
@@ -234,11 +197,9 @@ div.reconnect-wrapper {
  * The current room, if any.
  */
 div.room-wrapper {
-    flex-grow: 1;
     display: flex;
-    height: 100%;
     flex-direction: column;  
-    padding: 5px;
+    padding: 10px;
 }
 
 div.typing-wrapper {
@@ -247,9 +208,6 @@ div.typing-wrapper {
     flex-shrink: 0;
 }
 
-/*
- * The message input and send button.
- */
 div.message-wrapper {
     display: flex;
     flex-shrink: 0;
@@ -263,7 +221,14 @@ div.message-wrapper {
         margin: 3px;
         height: 40px;
         width: 40px;
-        transition: background-color $transition-duration;
+        transition: color $transition-duration;
+
+        background-color: $background-color;
+        color: $primary-color;
+
+        &:hover {
+            color: $primary-color-light;
+        }
     }
 }
 
@@ -357,6 +322,19 @@ span.sender-wrapper {
     vertical-align: bottom; /* Fix for overflow changing element height */
     color: black;
 }
+
+a.file-wrapper {
+    padding: 5px 0px 5px 0px;
+    display: flex;
+    align-items: center;
+
+    .feather-icon {
+        height: 30px;
+        width: 30px;
+        margin-right: 10px;
+    }
+}
+
 
 /**
  * Icons

@@ -1,0 +1,12 @@
+@mixin input-common {
+    padding: 5px;
+    border-radius: $border-radius;
+    outline: none;
+
+    font-family: inherit;
+    font-size: inherit;
+
+    &:focus {
+        transition: background-color $transition-duration;
+    }
+}
