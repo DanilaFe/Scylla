@@ -268,15 +268,17 @@ groupBy f xs =
     in
         List.foldl (\v acc -> Dict.update (f v) (update v) acc) Dict.empty xs
 
-uniqueByRecursive : (a -> comparable) -> List a -> Set comparable -> List a
-uniqueByRecursive f l s = case l of
-    x::tail -> if Set.member (f x) s
-        then uniqueByRecursive f tail s
-        else x::uniqueByRecursive f tail (Set.insert (f x) s)
-    [] -> []
+uniqueByTailRecursive : (a -> comparable) -> List a -> Set comparable -> List a -> List a
+uniqueByTailRecursive f l s acc =
+    case l of
+        x::tail ->
+            if Set.member (f x) s
+            then uniqueByTailRecursive f tail s acc
+            else uniqueByTailRecursive f tail s (x::acc)
+        [] -> acc
 
 uniqueBy : (a -> comparable) -> List a -> List a
-uniqueBy f l = uniqueByRecursive f l Set.empty
+uniqueBy f l = uniqueByTailRecursive f l Set.empty []
 
 findFirst : (a -> Bool) -> List a -> Maybe a
 findFirst cond l = case l of
