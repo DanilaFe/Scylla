@@ -1,6 +1,6 @@
 module Scylla.Model exposing (..)
 import Scylla.Api exposing (..)
-import Scylla.Sync exposing (SyncResponse, HistoryResponse, JoinedRoom, senderName, roomName, roomJoinedUsers)
+import Scylla.Sync exposing (SyncResponse, HistoryResponse, JoinedRoom, senderName, roomName, roomJoinedUsers, findFirst, directMessagesDecoder)
 import Scylla.Login exposing (LoginResponse, Username, Password)
 import Scylla.UserData exposing (UserData)
 import Scylla.Route exposing (Route(..), RoomId)
@@ -13,7 +13,7 @@ import Url.Builder
 import Dict exposing (Dict)
 import Time exposing (Posix)
 import File exposing (File)
-import Json.Decode
+import Json.Decode as Decode
 import Browser
 import Http
 import Url exposing (Url)
@@ -54,7 +54,7 @@ type Msg =
     | ReceiveUserData Username (Result Http.Error UserData) -- HTTP, receive user data
     | ReceiveCompletedReadMarker (Result Http.Error ()) -- HTTP, read marker request completed
     | ReceiveCompletedTypingIndicator (Result Http.Error ()) -- HTTP, typing indicator request completed
-    | ReceiveStoreData Json.Decode.Value -- We are send back a value on request from localStorage.
+    | ReceiveStoreData Decode.Value -- We are send back a value on request from localStorage.
     | TypingTick Posix -- Tick for updating the typing status
     | History RoomId -- Load history for a room
     | ReceiveHistoryResponse RoomId (Result Http.Error HistoryResponse) -- HTTP, receive history
@@ -74,24 +74,21 @@ type Msg =
 displayName : Model -> Username -> String
 displayName m s = Maybe.withDefault (senderName s) <| Maybe.andThen .displayName <| Dict.get s m.userData
 
-roomDisplayName : Model -> JoinedRoom -> String
-roomDisplayName m jr =
+roomDisplayName : Model -> RoomId -> JoinedRoom -> String
+roomDisplayName m rid jr =
     let
         customName = roomName jr
-        roomUsers = List.filter ((/=) m.loginUsername) <| roomJoinedUsers jr
-        singleUserName = if List.length roomUsers == 1 then List.head roomUsers else Nothing
-        singleUserDisplayName = Maybe.andThen
-            (\u -> Maybe.andThen .displayName <| Dict.get u m.userData) singleUserName
-        firstOption d os = case os of
-            [] -> d
-            ((Just v)::_) -> v
-            (Nothing::xs) -> firstOption d xs
+        direct = m.sync.accountData
+            |> Maybe.andThen .events
+            |> Maybe.andThen (findFirst ((==) "m.direct" << .type_))
+            |> Maybe.map (Decode.decodeValue directMessagesDecoder << .content)
+            |> Maybe.andThen Result.toMaybe
+            |> Maybe.andThen (Dict.get rid)
     in
-        firstOption "<No Name>"
-            [ customName
-            , singleUserDisplayName
-            , singleUserName
-            ]
+        case (customName, direct) of
+            (Just s, _) -> s
+            (_, Just u) -> displayName m u
+            _ -> "<No Name>"
 
 roomUrl : String -> String
 roomUrl s = Url.Builder.absolute [ "room", s ] []

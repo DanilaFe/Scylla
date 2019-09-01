@@ -109,18 +109,18 @@ homeserverView m hs rs =
     let
         roomList = div [ class "rooms-list" ]
             <| List.map (\(rid, r) -> roomListElementView m rid r)
-            <| List.sortBy (\(rid, r) -> roomDisplayName m r) rs
+            <| List.sortBy (\(rid, r) -> roomDisplayName m rid r) rs
     in
         div [ class "homeserver-wrapper" ] [ h3 [] [ text hs ], roomList ]
 
-roomListElementView : Model -> String -> JoinedRoom -> Html Msg
-roomListElementView m s jr =
+roomListElementView : Model -> RoomId -> JoinedRoom -> Html Msg
+roomListElementView m rid jr =
     let
-        name = roomDisplayName m jr
+        name = roomDisplayName m rid jr
         isVisible = m.searchText == "" || (String.contains (String.toLower m.searchText) <| String.toLower name)
         isCurrentRoom = case currentRoomId m of
             Nothing -> False
-            Just cr -> cr == s
+            Just cr -> cr == rid
     in
         div [ classList
                 [ ("room-link-wrapper", True)
@@ -129,7 +129,7 @@ roomListElementView m s jr =
                 ]
             ]
             <| roomNotificationCountView jr.unreadNotifications ++
-                [ a [ href <| roomUrl s ] [ text name ] ]
+                [ a [ href <| roomUrl rid ] [ text name ] ]
 
 roomNotificationCountView : Maybe UnreadNotificationCounts -> List (Html Msg)
 roomNotificationCountView ns =
@@ -182,7 +182,7 @@ joinedRoomView m roomId rd =
             ]
     in
         div [ class "room-wrapper" ]
-            [ h2 [] [ text <| roomDisplayName m rd.joinedRoom ]
+            [ h2 [] [ text <| roomDisplayName m roomId rd.joinedRoom ]
             , messagesWrapper
             , messageInput
             , typingWrapper

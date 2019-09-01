@@ -258,6 +258,22 @@ historyResponseDecoder =
         |> required "end" string
         |> required "chunk" (list roomEventDecoder)
 
+-- Direct Messages
+type alias DirectMessages = Dict String String
+type alias DirectMessagesRaw = Dict String (List String)
+
+directMessagesDecoder : Decoder DirectMessages
+directMessagesDecoder =
+    Decode.dict (Decode.list Decode.string)
+        |> Decode.map (invertDirectMessages)
+
+invertDirectMessages : DirectMessagesRaw -> DirectMessages
+invertDirectMessages dmr =
+    Dict.foldl
+        (\k lv acc -> List.foldl (\v -> Dict.insert v k) acc lv)
+        Dict.empty
+        dmr
+
 -- Business Logic: Helper Functions
 groupBy : (a -> comparable) -> List a -> Dict comparable (List a)
 groupBy f xs =
@@ -275,7 +291,7 @@ uniqueByTailRecursive f l s acc =
             if Set.member (f x) s
             then uniqueByTailRecursive f tail s acc
             else uniqueByTailRecursive f tail s (x::acc)
-        [] -> acc
+        [] -> List.reverse acc
 
 uniqueBy : (a -> comparable) -> List a -> List a
 uniqueBy f l = uniqueByTailRecursive f l Set.empty []
@@ -304,18 +320,18 @@ findLastEvent = findLastBy .originServerTs
 mergeMaybe : (a -> a -> a) -> Maybe a -> Maybe a -> Maybe a
 mergeMaybe f l r = case (l, r) of
     (Just v1, Just v2) -> Just <| f v1 v2
-    (Just v, Nothing) -> Just v
-    (Nothing, Just v) -> Just v
+    (Just v, Nothing) -> l
+    (Nothing, Just v) -> r
     _ -> Nothing
 
 mergeEvents : List Event -> List Event -> List Event
 mergeEvents l1 l2 = l1 ++ l2
 
 mergeStateEvents : List StateEvent -> List StateEvent -> List StateEvent
-mergeStateEvents l1 l2 = uniqueBy .eventId <| l1 ++ l2
+mergeStateEvents l1 l2 = l1 ++ l2
 
 mergeRoomEvents : List RoomEvent -> List RoomEvent -> List RoomEvent
-mergeRoomEvents l1 l2 = uniqueBy .eventId <| l1 ++ l2
+mergeRoomEvents l1 l2 = l1 ++ l2
 
 mergeStrippedStates : List StrippedState -> List StrippedState -> List StrippedState
 mergeStrippedStates l1 l2 = l1 ++ l2
