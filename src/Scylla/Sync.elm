@@ -328,10 +328,10 @@ mergeEvents : List Event -> List Event -> List Event
 mergeEvents l1 l2 = l1 ++ l2
 
 mergeStateEvents : List StateEvent -> List StateEvent -> List StateEvent
-mergeStateEvents l1 l2 = l1 ++ l2
+mergeStateEvents l1 l2 = uniqueBy .eventId <| l1 ++ l2
 
 mergeRoomEvents : List RoomEvent -> List RoomEvent -> List RoomEvent
-mergeRoomEvents l1 l2 = l1 ++ l2
+mergeRoomEvents l1 l2 = uniqueBy .eventId <| l1 ++ l2
 
 mergeStrippedStates : List StrippedState -> List StrippedState -> List StrippedState
 mergeStrippedStates l1 l2 = l1 ++ l2
