@@ -52,6 +52,7 @@ init _ url key =
             , sending = Dict.empty
             , transactionId = 0
             , userData = Dict.empty
+            , roomNames = Dict.empty
             , connected = True
             , searchText = ""
             }
@@ -319,7 +320,7 @@ updateSyncResponse model r notify =
         notificationCmd sr = if notify
             then Maybe.withDefault Cmd.none
                     <| Maybe.map (\(s, e) -> sendNotificationPort
-                    { name = displayName model e.sender
+                    { name = displayName model.userData e.sender
                     , text = notificationText e
                     , room = s
                     }) <| notification sr
@@ -343,9 +344,16 @@ updateSyncResponse model r notify =
             _ -> Cmd.none
         receivedEvents sr = List.map Just <| allTimelineEventIds sr
         sending sr = Dict.filter (\_ (rid, { body, id }) -> not <| List.member id <| receivedEvents sr) model.sending
+        newSync sr = mergeSyncResponse model.sync sr
+        newModel sr =
+            { model | sync = newSync sr
+            , sending = sending (mergeSyncResponse model.sync sr)
+            , roomNames = computeRoomsDisplayNames model.userData (newSync sr)
+            }
     in
         case r of
-            Ok sr -> ({ model | sync = mergeSyncResponse model.sync sr, sending = sending (mergeSyncResponse model.sync sr) }, Cmd.batch
+            Ok sr -> (newModel sr
+                , Cmd.batch
                 [ syncCmd
                 , newUserCmd sr
                 , notificationCmd sr

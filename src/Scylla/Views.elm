@@ -109,14 +109,14 @@ homeserverView m hs rs =
     let
         roomList = div [ class "rooms-list" ]
             <| List.map (\(rid, r) -> roomListElementView m rid r)
-            <| List.sortBy (\(rid, r) -> roomDisplayName m rid r) rs
+            <| List.sortBy (\(rid, r) -> roomDisplayName m rid) rs
     in
         div [ class "homeserver-wrapper" ] [ h3 [] [ text hs ], roomList ]
 
 roomListElementView : Model -> RoomId -> JoinedRoom -> Html Msg
 roomListElementView m rid jr =
     let
-        name = roomDisplayName m rid jr
+        name = roomDisplayName m rid
         isVisible = m.searchText == "" || (String.contains (String.toLower m.searchText) <| String.toLower name)
         isCurrentRoom = case currentRoomId m of
             Nothing -> False
@@ -161,7 +161,7 @@ joinedRoomView m roomId rd =
     let
         renderedMessages = List.map (userMessagesView m) <| mergeMessages m.loginUsername <| extractMessages rd
         messagesWrapper = messagesWrapperView m roomId renderedMessages
-        typing = List.map (displayName m) <| roomTypingUsers rd.joinedRoom
+        typing = List.map (displayName m.userData) <| roomTypingUsers rd.joinedRoom
         typingText = String.join ", " typing
         typingSuffix = case List.length typing of
             0 -> ""
@@ -182,7 +182,7 @@ joinedRoomView m roomId rd =
             ]
     in
         div [ class "room-wrapper" ]
-            [ h2 [] [ text <| roomDisplayName m roomId rd.joinedRoom ]
+            [ h2 [] [ text <| roomDisplayName m roomId ]
             , messagesWrapper
             , messageInput
             , typingWrapper
@@ -215,7 +215,7 @@ messagesWrapperView m rid es = div [ class "messages-wrapper", id "messages-wrap
 
 senderView : Model -> Username -> Html Msg
 senderView m s =
-    span [ style "color" <| stringColor s, class "sender-wrapper" ] [ text <| displayName m s ]
+    span [ style "color" <| stringColor s, class "sender-wrapper" ] [ text <| displayName m.userData s ]
 
 userMessagesView : Model -> (Username, List Message) -> Html Msg
 userMessagesView m (u, ms) = 

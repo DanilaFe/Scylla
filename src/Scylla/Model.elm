@@ -1,6 +1,6 @@
 module Scylla.Model exposing (..)
 import Scylla.Api exposing (..)
-import Scylla.Sync exposing (SyncResponse, HistoryResponse, JoinedRoom, senderName, roomName, roomJoinedUsers, findFirst, directMessagesDecoder)
+import Scylla.Sync exposing (SyncResponse, HistoryResponse, JoinedRoom, senderName, roomName, roomJoinedUsers, findFirst, directMessagesDecoder, AccountData)
 import Scylla.Login exposing (LoginResponse, Username, Password)
 import Scylla.UserData exposing (UserData)
 import Scylla.Route exposing (Route(..), RoomId)
@@ -31,6 +31,7 @@ type alias Model =
     , sending : Dict Int (RoomId, SendingMessage)
     , transactionId : Int
     , userData : Dict Username UserData
+    , roomNames : Dict RoomId String
     , connected : Bool
     , searchText : String
     }
@@ -71,14 +72,18 @@ type Msg =
     | AttemptReconnect
     | UpdateSearchText String
 
-displayName : Model -> Username -> String
-displayName m s = Maybe.withDefault (senderName s) <| Maybe.andThen .displayName <| Dict.get s m.userData
+displayName : Dict String UserData -> Username -> String
+displayName ud s = Maybe.withDefault (senderName s) <| Maybe.andThen .displayName <| Dict.get s ud
 
-roomDisplayName : Model -> RoomId -> JoinedRoom -> String
-roomDisplayName m rid jr =
+roomDisplayName : Model -> RoomId -> String
+roomDisplayName m rid =
+    Maybe.withDefault "<No Name>" <| Dict.get rid m.roomNames
+
+computeRoomDisplayName : Dict String UserData -> Maybe AccountData -> RoomId -> JoinedRoom -> Maybe String
+computeRoomDisplayName ud ad rid jr =
     let
         customName = roomName jr
-        direct = m.sync.accountData
+        direct = ad
             |> Maybe.andThen .events
             |> Maybe.andThen (findFirst ((==) "m.direct" << .type_))
             |> Maybe.map (Decode.decodeValue directMessagesDecoder << .content)
@@ -86,9 +91,21 @@ roomDisplayName m rid jr =
             |> Maybe.andThen (Dict.get rid)
     in
         case (customName, direct) of
-            (Just s, _) -> s
-            (_, Just u) -> displayName m u
-            _ -> "<No Name>"
+            (Just s, _) -> customName
+            (_, Just u) -> direct
+            _ -> Nothing
+
+computeRoomsDisplayNames : Dict String UserData -> SyncResponse -> Dict String String
+computeRoomsDisplayNames ud sr =
+    sr.rooms
+    |> Maybe.andThen .join
+    |> Maybe.map Dict.toList
+    |> Maybe.map (List.foldl
+        (\(rid, jr) d ->
+            computeRoomDisplayName ud sr.accountData rid jr 
+            |> Maybe.map (\n -> Dict.insert rid n d) 
+            |> Maybe.withDefault d) Dict.empty)
+    |> Maybe.withDefault Dict.empty
 
 roomUrl : String -> String
 roomUrl s = Url.Builder.absolute [ "room", s ] []
