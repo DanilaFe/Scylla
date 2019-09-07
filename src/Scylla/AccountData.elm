@@ -1,7 +1,7 @@
 module Scylla.AccountData exposing (..)
 import Scylla.Sync exposing (SyncResponse, AccountData, JoinedRoom, roomAccountData)
 import Json.Decode as Decode
-import Dict
+import Dict exposing (Dict)
 
 type NotificationSetting = Normal | MentionsOnly | None
 
@@ -27,4 +27,19 @@ roomIdNotificationSetting sr s = Maybe.withDefault Normal
     <| Maybe.map roomNotificationSetting
     <| Maybe.andThen (Dict.get s)
     <| Maybe.andThen .join sr.rooms
+
+type alias DirectMessages = Dict String String
+type alias DirectMessagesRaw = Dict String (List String)
+
+directMessagesDecoder : Decode.Decoder DirectMessages
+directMessagesDecoder =
+    Decode.dict (Decode.list Decode.string)
+        |> Decode.map (invertDirectMessages)
+
+invertDirectMessages : DirectMessagesRaw -> DirectMessages
+invertDirectMessages dmr =
+    Dict.foldl
+        (\k lv acc -> List.foldl (\v -> Dict.insert v k) acc lv)
+        Dict.empty
+        dmr
 

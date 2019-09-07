@@ -258,22 +258,6 @@ historyResponseDecoder =
         |> required "end" string
         |> required "chunk" (list roomEventDecoder)
 
--- Direct Messages
-type alias DirectMessages = Dict String String
-type alias DirectMessagesRaw = Dict String (List String)
-
-directMessagesDecoder : Decoder DirectMessages
-directMessagesDecoder =
-    Decode.dict (Decode.list Decode.string)
-        |> Decode.map (invertDirectMessages)
-
-invertDirectMessages : DirectMessagesRaw -> DirectMessages
-invertDirectMessages dmr =
-    Dict.foldl
-        (\k lv acc -> List.foldl (\v -> Dict.insert v k) acc lv)
-        Dict.empty
-        dmr
-
 -- Business Logic: Helper Functions
 groupBy : (a -> comparable) -> List a -> Dict comparable (List a)
 groupBy f xs =

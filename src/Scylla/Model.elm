@@ -1,6 +1,7 @@
 module Scylla.Model exposing (..)
 import Scylla.Api exposing (..)
-import Scylla.Sync exposing (SyncResponse, HistoryResponse, JoinedRoom, senderName, roomName, roomJoinedUsers, findFirst, directMessagesDecoder, AccountData)
+import Scylla.Sync exposing (SyncResponse, HistoryResponse, JoinedRoom, senderName, roomName, roomJoinedUsers, findFirst, AccountData)
+import Scylla.AccountData exposing (directMessagesDecoder)
 import Scylla.Login exposing (LoginResponse, Username, Password)
 import Scylla.UserData exposing (UserData)
 import Scylla.Route exposing (Route(..), RoomId)
