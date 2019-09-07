@@ -111,6 +111,12 @@ update msg model = case msg of
 requestScrollCmd : Cmd Msg
 requestScrollCmd = Task.attempt ViewportAfterMessage (Browser.Dom.getViewportOf "messages-wrapper")
 
+newUsersCmd : Model -> List Username -> Cmd Msg
+newUsersCmd m us = m.token
+    |> Maybe.map (\t -> List.map (userData m.apiUrl t) us)
+    |> Maybe.withDefault []
+    |> Cmd.batch
+
 updateSendRoomTextResponse : Model -> Int -> Result Http.Error String -> (Model, Cmd Msg)
 updateSendRoomTextResponse m t r =
     let
@@ -173,15 +179,14 @@ updateUploadSelected m rid f fs msg =
 updateHistoryResponse : Model -> RoomId -> Result Http.Error HistoryResponse -> (Model, Cmd Msg)
 updateHistoryResponse m r hr =
     let
-        newUsersCmd h = Cmd.batch
-            <| List.map (userData m.apiUrl (Maybe.withDefault "" m.token))
+        userDataCmd h = newUsersCmd m
             <| newUsers m
-            <| uniqueBy (\s -> s)
+            <| uniqueBy identity
             <| List.map .sender
             <| h.chunk
     in
         case hr of
-            Ok h -> ({ m | sync = appendHistoryResponse m.sync r h }, newUsersCmd h)
+            Ok h -> ({ m | sync = appendHistoryResponse m.sync r h }, userDataCmd h)
             Err _ -> ({ m | errors = "Unable to load older history from server"::m.errors }, Cmd.none)
 
 updateHistory : Model -> RoomId -> (Model, Cmd Msg)
@@ -307,9 +312,7 @@ updateSyncResponse model r notify =
         nextBatch = Result.withDefault model.sync.nextBatch
             <| Result.map .nextBatch r
         syncCmd = sync model.apiUrl token nextBatch
-        newUserCmd sr = Cmd.batch
-            <| List.map (userData model.apiUrl
-            <| Maybe.withDefault "" model.token)
+        userDataCmd sr = newUsersCmd model
             <| newUsers model
             <| allUsers sr
         notification sr = findFirstBy
@@ -354,7 +357,7 @@ updateSyncResponse model r notify =
             Ok sr -> (newModel sr
                 , Cmd.batch
                 [ syncCmd
-                , newUserCmd sr
+                , userDataCmd sr
                 , notificationCmd sr
                 , setScrollCmd sr
                 , setReadReceiptCmd sr
