@@ -3,7 +3,6 @@ import Scylla.Model exposing (..)
 import Scylla.Sync exposing (..)
 import Scylla.Route exposing (..)
 import Scylla.Fnv as Fnv
-import Scylla.Room exposing (..)
 import Scylla.Messages exposing (..)
 import Scylla.Login exposing (Username)
 import Scylla.UserData exposing (UserData)
@@ -18,6 +17,7 @@ import Json.Decode as Decode
 import Html exposing (Html, Attribute, div, input, text, button, div, span, a, h2, h3, table, td, tr, img, textarea, video, source, p)
 import Html.Attributes exposing (type_, placeholder, value, href, class, style, src, id, rows, controls, src, classList)
 import Html.Events exposing (onInput, onClick, preventDefaultOn)
+import Html.Lazy exposing (lazy6)
 import Dict exposing (Dict)
 import Tuple
 
@@ -44,8 +44,10 @@ stringColor s =
 viewFull : Model -> List (Html Msg)
 viewFull model = 
     let
-        room r = Maybe.map (\rd -> (r, rd))
-            <| roomData model r
+        room r = Maybe.map (\jr -> (r, jr))
+            <| Maybe.andThen (Dict.get r)
+            <| Maybe.andThen .join
+            <| model.sync.rooms
         core = case model.route of
             Login -> loginView model 
             Base -> baseView model Nothing
@@ -61,7 +63,7 @@ errorsView = div [ class "errors-wrapper" ] << List.indexedMap errorView
 errorView : Int -> String -> Html Msg
 errorView i s = div [ class "error-wrapper", onClick <| DismissError i ] [ iconView "alert-triangle", text s ]
 
-baseView : Model -> Maybe (String, RoomData) -> Html Msg
+baseView : Model -> Maybe (RoomId, JoinedRoom) -> Html Msg
 baseView m jr = 
     let
         roomView = Maybe.map (\(id, r) -> joinedRoomView m id r) jr
@@ -157,12 +159,10 @@ loginView m = div [ class "login-wrapper" ]
     , button [ onClick AttemptLogin ] [ text "Log In" ]
     ]
 
-joinedRoomView : Model -> RoomId -> RoomData -> Html Msg
-joinedRoomView m roomId rd =
+joinedRoomView : Model -> RoomId -> JoinedRoom -> Html Msg
+joinedRoomView m roomId jr =
     let
-        renderedMessages = List.map (userMessagesView m.userData m.apiUrl) <| mergeMessages m.loginUsername <| extractMessages rd
-        messagesWrapper = messagesWrapperView m roomId renderedMessages
-        typing = List.map (displayName m.userData) <| roomTypingUsers rd.joinedRoom
+        typing = List.map (displayName m.userData) <| roomTypingUsers jr
         typingText = String.join ", " typing
         typingSuffix = case List.length typing of
             0 -> ""
@@ -184,10 +184,23 @@ joinedRoomView m roomId rd =
     in
         div [ class "room-wrapper" ]
             [ h2 [] [ text <| roomDisplayName m roomId ]
-            , messagesWrapper
+            , lazy6 lazyMessagesView m.userData roomId jr m.apiUrl m.loginUsername m.sending
             , messageInput
             , typingWrapper
             ]
+
+lazyMessagesView : Dict String UserData -> RoomId -> JoinedRoom -> ApiUrl -> Username -> Dict Int (RoomId, SendingMessage) -> Html Msg
+lazyMessagesView ud rid jr au lu snd =
+    let
+        roomReceived = receivedMessagesRoom 
+            <| Maybe.withDefault []
+            <| Maybe.andThen .events jr.timeline
+        roomSending = sendingMessagesRoom rid snd
+        renderedMessages = List.map (userMessagesView ud au)
+            <| mergeMessages lu
+            <| roomReceived ++ roomSending
+    in
+        messagesWrapperView rid renderedMessages
 
 onEnterKey : Msg -> Attribute Msg
 onEnterKey msg =
@@ -208,8 +221,8 @@ iconView name =
             [ Svg.Attributes.class "feather-icon"
             ] [ Svg.use [ Svg.Attributes.xlinkHref (url ++ "#" ++ name) ] [] ]
 
-messagesWrapperView : Model -> RoomId -> List (Html Msg) -> Html Msg
-messagesWrapperView m rid es = div [ class "messages-wrapper", id "messages-wrapper" ]
+messagesWrapperView : RoomId -> List (Html Msg) -> Html Msg
+messagesWrapperView rid es = div [ class "messages-wrapper", id "messages-wrapper" ]
     [ a [ class "history-link", onClick <| History rid ] [ text "Load older messages" ]
     , table [ class "messages-table" ] es
     ]

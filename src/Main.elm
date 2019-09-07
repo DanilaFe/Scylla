@@ -2,7 +2,6 @@ import Browser exposing (application, UrlRequest(..))
 import Browser.Navigation as Nav
 import Browser.Dom exposing (Viewport, setViewportOf)
 import Scylla.Sync exposing (..)
-import Scylla.Room exposing (..)
 import Scylla.Messages exposing (..)
 import Scylla.Login exposing (..)
 import Scylla.Api exposing (..)

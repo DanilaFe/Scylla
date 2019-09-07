@@ -1,6 +1,8 @@
 module Scylla.Messages exposing (..)
 import Scylla.Sync exposing (RoomEvent)
 import Scylla.Login exposing (Username)
+import Scylla.Route exposing (RoomId)
+import Dict exposing (Dict)
 
 type SendingMessageBody = TextMessage String
 
@@ -9,8 +11,8 @@ type alias SendingMessage =
     , id : Maybe String
     }
 
-type Message =
-    Sending SendingMessage
+type Message
+    = Sending SendingMessage
     | Received RoomEvent
 
 messageUsername : Username -> Message -> Username
@@ -33,3 +35,12 @@ mergeMessages du xs =
         (fmu, fms, fmsl) = List.foldl foldFunction initialState xs
     in
         appendNamed fmu fms fmsl
+
+receivedMessagesRoom : List RoomEvent -> List Message
+receivedMessagesRoom es = List.map Received
+    <| List.filter (\e -> e.type_ == "m.room.message") es
+
+sendingMessagesRoom : RoomId -> Dict Int (RoomId, SendingMessage) -> List Message
+sendingMessagesRoom rid ms = List.map (\(tid, (_, sm)) -> Sending sm)
+    <| List.filter (\(_, (nrid, _)) -> nrid == rid)
+    <| Dict.toList ms
