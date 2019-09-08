@@ -149,7 +149,7 @@ userData apiUrl token username = request
     , tracker = Nothing
     }
 
-setReadMarkers : ApiUrl -> ApiToken -> String -> RoomId -> Maybe String -> Cmd Msg
+setReadMarkers : ApiUrl -> ApiToken -> RoomId -> String -> Maybe String -> Cmd Msg
 setReadMarkers apiUrl token roomId fullyRead readReceipt =
     let
         readReciptFields = case readReceipt of
@@ -173,6 +173,17 @@ sendTypingIndicator apiUrl token room user isTyping timeout = request
     , url = (fullClientUrl apiUrl) ++ "/rooms/" ++ room ++ "/typing/" ++ user
     , body = jsonBody <| object [ ("timeout", int timeout), ("typing", bool isTyping) ]
     , expect = expectWhatever ReceiveCompletedTypingIndicator
+    , timeout = Nothing
+    , tracker = Nothing
+    }
+
+setRoomAccountData : ApiUrl -> ApiToken -> Username -> RoomId -> String -> Decode.Value -> Msg -> Cmd Msg
+setRoomAccountData apiUrl token user roomId key value msg = request
+    { method = "PUT"
+    , headers = authenticatedHeaders token
+    , url = (fullClientUrl apiUrl) ++ "/user/" ++ user ++ "/rooms/" ++ roomId ++ "/account_data/" ++ key
+    , body = jsonBody value
+    , expect = expectWhatever (\_ -> msg)
     , timeout = Nothing
     , tracker = Nothing
     }

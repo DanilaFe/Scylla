@@ -1,9 +1,20 @@
 module Scylla.AccountData exposing (..)
 import Scylla.Sync exposing (SyncResponse, AccountData, JoinedRoom, roomAccountData)
 import Json.Decode as Decode
+import Json.Encode as Encode
 import Dict exposing (Dict)
 
 type NotificationSetting = Normal | MentionsOnly | None
+
+encodeNotificationSetting : NotificationSetting -> Decode.Value
+encodeNotificationSetting ns =
+    let
+        string = case ns of
+            Normal -> "Normal"
+            MentionsOnly -> "MentionsOnly"
+            None -> "None"
+    in
+        Encode.string string
 
 notificationSettingDecoder : Decode.Decoder NotificationSetting
 notificationSettingDecoder =

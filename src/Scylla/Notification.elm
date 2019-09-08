@@ -18,7 +18,6 @@ producesNotification ns re = case ns of
     Normal -> True
     _ -> False
 
-
 notificationText : RoomEvent -> String
 notificationText re = case (Decode.decodeValue (field "msgtype" string) re.content) of
     Ok "m.text" -> Result.withDefault "" <| (Decode.decodeValue (field "body" string) re.content)
