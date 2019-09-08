@@ -112,14 +112,14 @@ homeserverView m hs rs =
     let
         roomList = div [ class "rooms-list" ]
             <| List.map (\(rid, r) -> roomListElementView m rid r)
-            <| List.sortBy (\(rid, r) -> roomDisplayName m rid) rs
+            <| List.sortBy (\(rid, r) -> roomDisplayName m.roomNames rid) rs
     in
         div [ class "homeserver-wrapper" ] [ h3 [] [ text hs ], roomList ]
 
 roomListElementView : Model -> RoomId -> JoinedRoom -> Html Msg
 roomListElementView m rid jr =
     let
-        name = roomDisplayName m rid
+        name = roomDisplayName m.roomNames rid
         isVisible = m.searchText == "" || (String.contains (String.toLower m.searchText) <| String.toLower name)
         isCurrentRoom = case currentRoomId m of
             Nothing -> False
@@ -183,7 +183,7 @@ joinedRoomView m roomId jr =
             ]
     in
         div [ class "room-wrapper" ]
-            [ h2 [] [ text <| roomDisplayName m roomId ]
+            [ h2 [] [ text <| roomDisplayName m.roomNames roomId ]
             , lazy6 lazyMessagesView m.userData roomId jr m.apiUrl m.loginUsername m.sending
             , messageInput
             , typingWrapper

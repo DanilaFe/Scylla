@@ -60,25 +60,25 @@ type Msg =
     | TypingTick Posix -- Tick for updating the typing status
     | History RoomId -- Load history for a room
     | ReceiveHistoryResponse RoomId (Result Http.Error HistoryResponse) -- HTTP, receive history
-    | SendImages RoomId
-    | SendFiles RoomId
-    | ImagesSelected RoomId File (List File)
-    | FilesSelected RoomId File (List File)
-    | ImageUploadComplete RoomId File (Result Http.Error String)
-    | FileUploadComplete RoomId File (Result Http.Error String)
-    | SendImageResponse (Result Http.Error String)
-    | SendFileResponse (Result Http.Error String)
-    | ReceiveMarkdown MarkdownResponse
-    | DismissError Int
-    | AttemptReconnect
-    | UpdateSearchText String
+    | SendImages RoomId -- Image selection triggered
+    | SendFiles RoomId -- File selection triggered
+    | ImagesSelected RoomId File (List File) -- Images to send selected
+    | FilesSelected RoomId File (List File) -- Files to send selected
+    | ImageUploadComplete RoomId File (Result Http.Error String) -- Image has been uploaded
+    | FileUploadComplete RoomId File (Result Http.Error String) -- File has been uploaded
+    | SendImageResponse (Result Http.Error String) -- Server responded to image
+    | SendFileResponse (Result Http.Error String) -- Server responded to file
+    | ReceiveMarkdown MarkdownResponse -- Markdown was rendered
+    | DismissError Int -- User dismisses error
+    | AttemptReconnect -- User wants to reconnect to server
+    | UpdateSearchText String -- Change search text in room list
 
 displayName : Dict String UserData -> Username -> String
 displayName ud s = Maybe.withDefault (senderName s) <| Maybe.andThen .displayName <| Dict.get s ud
 
-roomDisplayName : Model -> RoomId -> String
-roomDisplayName m rid =
-    Maybe.withDefault "<No Name>" <| Dict.get rid m.roomNames
+roomDisplayName : Dict RoomId String -> RoomId -> String
+roomDisplayName rd rid =
+    Maybe.withDefault "<No Name>" <| Dict.get rid rd
 
 computeRoomDisplayName : Dict String UserData -> Maybe AccountData -> RoomId -> JoinedRoom -> Maybe String
 computeRoomDisplayName ud ad rid jr =
