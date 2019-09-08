@@ -13,11 +13,6 @@ type alias Notification =
 port sendNotificationPort : Notification -> Cmd msg
 port onNotificationClickPort : (String -> msg) -> Sub msg
 
-producesNotification : NotificationSetting -> RoomEvent -> Bool
-producesNotification ns re = case ns of
-    Normal -> True
-    _ -> False
-
 notificationText : RoomEvent -> String
 notificationText re = case (Decode.decodeValue (field "msgtype" string) re.content) of
     Ok "m.text" -> Result.withDefault "" <| (Decode.decodeValue (field "body" string) re.content)
@@ -30,6 +25,5 @@ joinedRoomNotificationEvents s =
     in
         List.sortBy (\(k, v) -> v.originServerTs)
         <| Dict.foldl (\k v a -> a ++ applyPair k v) []
-        <| Dict.map (\k v -> List.filter (producesNotification (roomIdNotificationSetting s k)) v)
         <| joinedRoomsTimelineEvents s
 
