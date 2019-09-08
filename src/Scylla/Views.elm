@@ -238,42 +238,60 @@ userMessagesView ud apiUrl (u, ms) =
     in
         tr []
             [ td [] [ senderView ud u ]
-            , td [] <| List.map wrap <| List.filterMap (messageView apiUrl) ms
+            , td [] <| List.map wrap <| List.filterMap (messageView ud apiUrl) ms
             ]
 
-messageView : ApiUrl -> Message -> Maybe (Html Msg)
-messageView apiUrl msg = case msg of
+messageView : Dict String UserData -> ApiUrl -> Message -> Maybe (Html Msg)
+messageView ud apiUrl msg = case msg of
     Sending t -> Just <| sendingMessageView t
-    Received re -> roomEventView apiUrl re
+    Received re -> roomEventView ud apiUrl re
 
 sendingMessageView : SendingMessage -> Html Msg
 sendingMessageView msg = case msg.body of
     TextMessage t -> span [ class "sending"] [ text t ]
 
-roomEventView : ApiUrl -> RoomEvent -> Maybe (Html Msg)
-roomEventView apiUrl re =
+roomEventView : Dict String UserData -> ApiUrl -> RoomEvent -> Maybe (Html Msg)
+roomEventView ud apiUrl re =
     let
         msgtype = Decode.decodeValue (Decode.field "msgtype" Decode.string) re.content
     in
         case msgtype of
             Ok "m.text" -> roomEventTextView re
+            Ok "m.notice" -> roomEventNoticeView re
+            Ok "m.emote" -> roomEventEmoteView ud re
             Ok "m.image" -> roomEventImageView apiUrl re
             Ok "m.file" -> roomEventFileView apiUrl re
             Ok "m.video" -> roomEventVideoView apiUrl re
             _ -> Nothing
 
-roomEventTextView : RoomEvent -> Maybe (Html Msg)
-roomEventTextView re =
+roomEventFormattedContent : RoomEvent -> Maybe (List (Html Msg))
+roomEventFormattedContent re = Maybe.map Html.Parser.Util.toVirtualDom
+    <| Maybe.andThen (Result.toMaybe << Html.Parser.run )
+    <| Result.toMaybe
+    <| Decode.decodeValue (Decode.field "formatted_body" Decode.string) re.content
+
+roomEventContent : (List (Html Msg) -> Html Msg) -> RoomEvent -> Maybe (Html Msg)
+roomEventContent f re =
     let
         body = Decode.decodeValue (Decode.field "body" Decode.string) re.content
-        customHtml = Maybe.map Html.Parser.Util.toVirtualDom
-            <| Maybe.andThen (Result.toMaybe << Html.Parser.run )
-            <| Result.toMaybe
-            <| Decode.decodeValue (Decode.field "formatted_body" Decode.string) re.content
+        customHtml = roomEventFormattedContent re
     in
         case customHtml of
-            Just c -> Just <| div [] c
-            Nothing -> Maybe.map (p [] << List.singleton << text) <| Result.toMaybe body
+            Just c -> Just <| f c
+            Nothing -> Maybe.map (f << List.singleton << text) <| Result.toMaybe body
+
+roomEventEmoteView : Dict String UserData -> RoomEvent -> Maybe (Html Msg)
+roomEventEmoteView ud re =
+    let
+        emoteText = "* " ++ displayName ud re.sender ++ " "
+    in
+        roomEventContent (\cs -> span [] (text emoteText :: cs)) re
+
+roomEventNoticeView : RoomEvent -> Maybe (Html Msg)
+roomEventNoticeView = roomEventContent (span [ class "message-notice" ])
+
+roomEventTextView : RoomEvent -> Maybe (Html Msg)
+roomEventTextView = roomEventContent (span [])
 
 roomEventImageView : ApiUrl -> RoomEvent -> Maybe (Html Msg)
 roomEventImageView apiUrl re =
