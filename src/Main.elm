@@ -345,7 +345,9 @@ updateSyncResponse model r notify =
             (Just rid, Just re) -> setReadMarkers model.apiUrl token rid re.eventId <| Just re.eventId
             _ -> Cmd.none
         receivedEvents sr = List.map Just <| allTimelineEventIds sr
-        sending sr = Dict.filter (\_ (rid, { body, id }) -> not <| List.member id <| receivedEvents sr) model.sending
+        receivedTransactions sr = List.filterMap (Maybe.andThen .transactionId << .unsigned)
+            <| allTimelineEvents sr
+        sending sr = Dict.filter (\tid (rid, { body, id }) -> not <| List.member (String.fromInt tid) <| receivedTransactions sr) model.sending
         newSync sr = mergeSyncResponse model.sync sr
         newModel sr =
             { model | sync = newSync sr
