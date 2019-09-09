@@ -274,7 +274,7 @@ uniqueByTailRecursive f l s acc =
         x::tail ->
             if Set.member (f x) s
             then uniqueByTailRecursive f tail s acc
-            else uniqueByTailRecursive f tail s (x::acc)
+            else uniqueByTailRecursive f tail (Set.insert (f x) s) (x::acc)
         [] -> List.reverse acc
 
 uniqueBy : (a -> comparable) -> List a -> List a
