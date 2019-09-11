@@ -2,6 +2,7 @@ import Browser exposing (application, UrlRequest(..))
 import Browser.Navigation as Nav
 import Browser.Dom exposing (Viewport, setViewportOf)
 import Scylla.Sync exposing (..)
+import Scylla.Sync.Events exposing (toMessageEvent, getType, getSender, getUnsigned)
 import Scylla.Messages exposing (..)
 import Scylla.Login exposing (..)
 import Scylla.Api exposing (..)
@@ -182,7 +183,7 @@ updateHistoryResponse m r hr =
         userDataCmd h = newUsersCmd m
             <| newUsers m
             <| uniqueBy identity
-            <| List.map .sender
+            <| List.map getSender
             <| h.chunk
     in
         case hr of
@@ -253,7 +254,7 @@ updateChangeRoute m r =
         joinedRoom = case r of
             Room rid -> Maybe.andThen (Dict.get rid) <| Maybe.andThen .join <| m.sync.rooms
             _ -> Nothing
-        lastMessage = Maybe.andThen (findLastEvent (((==) "m.room.message") << .type_)) <| Maybe.andThen .events <| Maybe.andThen .timeline joinedRoom
+        lastMessage = Maybe.andThen (findLastEvent (((==) "m.room.message") << .type_)) <| Maybe.map (List.filterMap toMessageEvent) <| Maybe.andThen .events <| Maybe.andThen .timeline joinedRoom
         readMarkerCmd = case (r, lastMessage) of
             (Room rid, Just re) -> setReadMarkers m.apiUrl (Maybe.withDefault "" m.token) rid re.eventId <| Just re.eventId
             _ -> Cmd.none
@@ -331,6 +332,7 @@ updateSyncResponse model r notify =
         roomMessages sr = case room of
             Just rid -> List.filter (((==) "m.room.message") << .type_)
                 <| Maybe.withDefault []
+                <| Maybe.map (List.filterMap (toMessageEvent))
                 <| Maybe.andThen .events
                 <| Maybe.andThen .timeline
                 <| Maybe.andThen (Dict.get rid)
@@ -345,7 +347,7 @@ updateSyncResponse model r notify =
             (Just rid, Just re) -> setReadMarkers model.apiUrl token rid re.eventId <| Just re.eventId
             _ -> Cmd.none
         receivedEvents sr = List.map Just <| allTimelineEventIds sr
-        receivedTransactions sr = List.filterMap (Maybe.andThen .transactionId << .unsigned)
+        receivedTransactions sr = List.filterMap (Maybe.andThen .transactionId << getUnsigned)
             <| allTimelineEvents sr
         sending sr = Dict.filter (\tid (rid, { body, id }) -> not <| List.member (String.fromInt tid) <| receivedTransactions sr) model.sending
         newSync sr = mergeSyncResponse model.sync sr

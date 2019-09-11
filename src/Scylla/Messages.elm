@@ -1,5 +1,5 @@
 module Scylla.Messages exposing (..)
-import Scylla.Sync exposing (RoomEvent)
+import Scylla.Sync.Events exposing (RoomEvent, MessageEvent, toMessageEvent)
 import Scylla.Login exposing (Username)
 import Scylla.Route exposing (RoomId)
 import Dict exposing (Dict)
@@ -13,7 +13,7 @@ type alias SendingMessage =
 
 type Message
     = Sending SendingMessage
-    | Received RoomEvent
+    | Received MessageEvent
 
 messageUsername : Username -> Message -> Username
 messageUsername u msg = case msg of
@@ -38,7 +38,8 @@ mergeMessages du xs =
 
 receivedMessagesRoom : List RoomEvent -> List Message
 receivedMessagesRoom es = List.map Received
-    <| List.filter (\e -> e.type_ == "m.room.message") es
+    <| List.filter (\e -> e.type_ == "m.room.message")
+    <| List.filterMap toMessageEvent es
 
 sendingMessagesRoom : RoomId -> Dict Int (RoomId, SendingMessage) -> List Message
 sendingMessagesRoom rid ms = List.map (\(tid, (_, sm)) -> Sending sm)

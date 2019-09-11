@@ -2,222 +2,14 @@ module Scylla.Sync exposing (..)
 import Scylla.Api exposing (..)
 import Scylla.Login exposing (Username)
 import Scylla.Route exposing (RoomId)
+import Scylla.Sync.DecodeTools exposing (maybeDecode)
+import Scylla.Sync.Events exposing (..)
+import Scylla.Sync.Rooms exposing (..)
+import Scylla.Sync.AccountData exposing (..)
 import Dict exposing (Dict)
 import Json.Decode as Decode exposing (Decoder, int, string, float, list, value, dict, bool, field)
 import Json.Decode.Pipeline exposing (required, optional)
 import Set exposing (Set)
-
--- Special Decoding
-decodeJust : Decoder a -> Decoder (Maybe a)
-decodeJust = Decode.map Just
-
-maybeDecode : String -> Decoder a -> Decoder (Maybe a -> b) -> Decoder b
-maybeDecode s d = optional s (decodeJust d) Nothing
-
--- General Events
-type alias Event =
-    { content : Decode.Value
-    , type_ : String
-    }
-
-eventDecoder : Decoder Event
-eventDecoder =
-    Decode.succeed Event
-        |> required "content" value
-        |> required "type" string
-
-type alias EventContent = Decode.Value
-
-eventContentDecoder : Decoder EventContent
-eventContentDecoder = Decode.value
-
--- Unsigned Data
-type alias UnsignedData =
-    { age : Maybe Int
-    , redactedBecause : Maybe Event
-    , transactionId : Maybe String
-    }
-
-unsignedDataDecoder : Decoder UnsignedData
-unsignedDataDecoder =
-    Decode.succeed UnsignedData
-        |> maybeDecode "age" int
-        |> maybeDecode "redacted_because" eventDecoder
-        |> maybeDecode "transaction_id" string
-
--- State
-type alias State =
-    { events : Maybe (List StateEvent)
-    }
-
-stateDecoder : Decoder State
-stateDecoder =
-    Decode.succeed State
-        |> maybeDecode "events" (list stateEventDecoder)
-
-type alias StateEvent =
-    { content : Decode.Value
-    , type_ : String
-    , eventId : String
-    , sender : String
-    , originServerTs : Int
-    , unsigned : Maybe UnsignedData
-    , prevContent : Maybe EventContent
-    , stateKey : String
-    }
-
-stateEventDecoder : Decoder StateEvent
-stateEventDecoder =
-    Decode.succeed StateEvent
-        |> required "content" value
-        |> required "type" string
-        |> required "event_id" string
-        |> required "sender" string
-        |> required "origin_server_ts" int
-        |> maybeDecode "unsigned" unsignedDataDecoder
-        |> maybeDecode "prev_content" eventContentDecoder
-        |> required "state_key" string
-
--- Rooms
-type alias Rooms =
-    { join : Maybe (Dict String JoinedRoom)
-    , invite : Maybe (Dict String InvitedRoom)
-    , leave : Maybe (Dict String LeftRoom)
-    }
-
-roomsDecoder : Decoder Rooms
-roomsDecoder =
-    Decode.succeed Rooms
-        |> maybeDecode "join" (dict joinedRoomDecoder)
-        |> maybeDecode "invite" (dict invitedRoomDecoder)
-        |> maybeDecode "leave" (dict leftRoomDecoder)
-
-type alias JoinedRoom =
-    { state : Maybe State
-    , timeline : Maybe Timeline
-    , ephemeral : Maybe Ephemeral
-    , accountData : Maybe AccountData
-    , unreadNotifications : Maybe UnreadNotificationCounts
-    }
-
-joinedRoomDecoder : Decoder JoinedRoom
-joinedRoomDecoder =
-    Decode.succeed JoinedRoom
-        |> maybeDecode "state" stateDecoder
-        |> maybeDecode "timeline" timelineDecoder
-        |> maybeDecode "ephemeral" ephemeralDecoder
-        |> maybeDecode "account_data" accountDataDecoder
-        |> maybeDecode "unread_notifications" unreadNotificationCountsDecoder
-
-
---  Joined Room Data
-type alias Timeline =
-    { events : Maybe (List RoomEvent)
-    , limited : Maybe Bool
-    , prevBatch : Maybe String
-    }
-
-timelineDecoder =
-    Decode.succeed Timeline
-        |> maybeDecode "events" (list roomEventDecoder)
-        |> maybeDecode "limited" bool
-        |> maybeDecode "prev_batch" string
-
-type alias RoomEvent =
-    { content : Decode.Value
-    , type_ : String
-    , eventId : String
-    , sender : String
-    , originServerTs : Int
-    , unsigned : Maybe UnsignedData
-    }
-
-roomEventDecoder : Decoder RoomEvent
-roomEventDecoder =
-    Decode.succeed RoomEvent
-        |> required "content" value
-        |> required "type" string
-        |> required "event_id" string
-        |> required "sender" string
-        |> required "origin_server_ts" int
-        |> maybeDecode "unsigned" unsignedDataDecoder
-
-type alias Ephemeral =
-    { events : Maybe (List Event)
-    }
-
-ephemeralDecoder : Decoder Ephemeral
-ephemeralDecoder =
-    Decode.succeed Ephemeral
-        |> maybeDecode "events" (list eventDecoder)
-
-type alias AccountData =
-    { events : Maybe (List Event)
-    }
-
-accountDataDecoder : Decoder AccountData
-accountDataDecoder =
-    Decode.succeed AccountData
-        |> maybeDecode "events" (list eventDecoder)
-
-type alias UnreadNotificationCounts =
-    { highlightCount : Maybe Int
-    , notificationCount : Maybe Int
-    }
-
-unreadNotificationCountsDecoder : Decoder UnreadNotificationCounts
-unreadNotificationCountsDecoder =
-    Decode.succeed UnreadNotificationCounts
-        |> maybeDecode "highlight_count" int
-        |> maybeDecode "notification_count" int
-
---  Invited Room Data
-type alias InvitedRoom =
-    { inviteState : Maybe InviteState
-    }
-
-invitedRoomDecoder : Decoder InvitedRoom
-invitedRoomDecoder =
-    Decode.succeed InvitedRoom
-        |> maybeDecode "invite_state" inviteStateDecoder
-
-type alias InviteState =
-    { events : Maybe (List StrippedState)
-    }
-
-inviteStateDecoder : Decoder InviteState
-inviteStateDecoder =
-    Decode.succeed InviteState
-        |> maybeDecode "events" (list strippedStateDecoder)
-
-type alias StrippedState =
-    { content : EventContent
-    , stateKey : String
-    , type_ : String
-    , sender : String
-    }
-
-strippedStateDecoder : Decoder StrippedState
-strippedStateDecoder =
-    Decode.succeed StrippedState
-        |> required "content" eventContentDecoder
-        |> required "state_key" string
-        |> required "type" string
-        |> required "sender" string
-
--- Left Room Data
-type alias LeftRoom =
-    { state : Maybe State
-    , timeline : Maybe Timeline
-    , accountData : Maybe AccountData
-    }
-
-leftRoomDecoder : Decoder LeftRoom
-leftRoomDecoder =
-    Decode.succeed LeftRoom
-        |> maybeDecode "state" stateDecoder
-        |> maybeDecode "timeline" timelineDecoder
-        |> maybeDecode "account_data" accountDataDecoder
 
 -- General Sync Response
 type alias SyncResponse =
@@ -315,9 +107,9 @@ mergeStateEvents : List StateEvent -> List StateEvent -> List StateEvent
 mergeStateEvents l1 l2 = uniqueBy .eventId <| l1 ++ l2
 
 mergeRoomEvents : List RoomEvent -> List RoomEvent -> List RoomEvent
-mergeRoomEvents l1 l2 = uniqueBy .eventId <| l1 ++ l2
+mergeRoomEvents l1 l2 = uniqueBy getEventId <| l1 ++ l2
 
-mergeStrippedStates : List StrippedState -> List StrippedState -> List StrippedState
+mergeStrippedStates : List StrippedStateEvent -> List StrippedStateEvent -> List StrippedStateEvent
 mergeStrippedStates l1 l2 = l1 ++ l2
 
 mergeAccountData : AccountData -> AccountData -> AccountData
@@ -445,17 +237,7 @@ allRoomStateEvents jr =
     let
         stateEvents = Maybe.withDefault [] <|  Maybe.andThen .events jr.state
         timelineEvents = Maybe.withDefault [] <| Maybe.andThen .events jr.timeline
-        roomToStateEvent re =
-            { content = re.content
-            , type_ = re.type_
-            , eventId = re.eventId
-            , sender = re.sender
-            , originServerTs = re.originServerTs
-            , unsigned = re.unsigned
-            , prevContent = Nothing
-            , stateKey = ""
-            }
-        allStateEvents = uniqueBy .eventId (stateEvents ++ (List.map roomToStateEvent timelineEvents))
+        allStateEvents = uniqueBy .eventId (stateEvents ++ (List.filterMap toStateEvent timelineEvents))
     in
         allStateEvents
 
@@ -465,7 +247,7 @@ allRoomDictTimelineEvents dict = List.concatMap (Maybe.withDefault [] << .events
     <| Dict.values dict
 
 allTimelineEventIds : SyncResponse -> List String
-allTimelineEventIds s = List.map .eventId <| allTimelineEvents s
+allTimelineEventIds s = List.map getEventId <| allTimelineEvents s
 
 allTimelineEvents : SyncResponse -> List RoomEvent
 allTimelineEvents s =
@@ -476,7 +258,7 @@ allTimelineEvents s =
         joinedEvents = eventsFor .join
         leftEvents = eventsFor .leave
     in
-        uniqueBy .eventId <| leftEvents ++ joinedEvents
+        leftEvents ++ joinedEvents
 
 joinedRoomsTimelineEvents : SyncResponse -> Dict String (List RoomEvent)
 joinedRoomsTimelineEvents s =
@@ -534,7 +316,7 @@ roomTypingUsers jr = Maybe.withDefault []
 
 -- Business Logic: Users
 allUsers : SyncResponse -> List Username
-allUsers s = uniqueBy (\u -> u) <| List.map .sender <| allTimelineEvents s
+allUsers s = uniqueBy (\u -> u) <| List.map getSender <| allTimelineEvents s
 
 roomJoinedUsers : JoinedRoom -> List Username
 roomJoinedUsers r = 

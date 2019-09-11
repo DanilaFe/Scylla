@@ -1,5 +1,7 @@
 module Scylla.AccountData exposing (..)
-import Scylla.Sync exposing (SyncResponse, AccountData, JoinedRoom, roomAccountData)
+import Scylla.Sync exposing (SyncResponse, roomAccountData)
+import Scylla.Sync.AccountData exposing (AccountData)
+import Scylla.Sync.Rooms exposing (JoinedRoom)
 import Json.Decode as Decode
 import Json.Encode as Encode
 import Dict exposing (Dict)

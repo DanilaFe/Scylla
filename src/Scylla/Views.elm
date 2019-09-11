@@ -1,6 +1,8 @@
 module Scylla.Views exposing (..)
 import Scylla.Model exposing (..)
 import Scylla.Sync exposing (..)
+import Scylla.Sync.Events exposing (..)
+import Scylla.Sync.Rooms exposing (..)
 import Scylla.Route exposing (..)
 import Scylla.Fnv as Fnv
 import Scylla.Messages exposing (..)
@@ -250,7 +252,7 @@ sendingMessageView : SendingMessage -> Html Msg
 sendingMessageView msg = case msg.body of
     TextMessage t -> span [ class "sending"] [ text t ]
 
-roomEventView : Dict String UserData -> ApiUrl -> RoomEvent -> Maybe (Html Msg)
+roomEventView : Dict String UserData -> ApiUrl -> MessageEvent -> Maybe (Html Msg)
 roomEventView ud apiUrl re =
     let
         msgtype = Decode.decodeValue (Decode.field "msgtype" Decode.string) re.content
@@ -264,13 +266,13 @@ roomEventView ud apiUrl re =
             Ok "m.video" -> roomEventVideoView apiUrl re
             _ -> Nothing
 
-roomEventFormattedContent : RoomEvent -> Maybe (List (Html Msg))
+roomEventFormattedContent : MessageEvent -> Maybe (List (Html Msg))
 roomEventFormattedContent re = Maybe.map Html.Parser.Util.toVirtualDom
     <| Maybe.andThen (Result.toMaybe << Html.Parser.run )
     <| Result.toMaybe
     <| Decode.decodeValue (Decode.field "formatted_body" Decode.string) re.content
 
-roomEventContent : (List (Html Msg) -> Html Msg) -> RoomEvent -> Maybe (Html Msg)
+roomEventContent : (List (Html Msg) -> Html Msg) -> MessageEvent -> Maybe (Html Msg)
 roomEventContent f re =
     let
         body = Decode.decodeValue (Decode.field "body" Decode.string) re.content
@@ -280,20 +282,20 @@ roomEventContent f re =
             Just c -> Just <| f c
             Nothing -> Maybe.map (f << List.singleton << text) <| Result.toMaybe body
 
-roomEventEmoteView : Dict String UserData -> RoomEvent -> Maybe (Html Msg)
+roomEventEmoteView : Dict String UserData -> MessageEvent -> Maybe (Html Msg)
 roomEventEmoteView ud re =
     let
         emoteText = "* " ++ displayName ud re.sender ++ " "
     in
         roomEventContent (\cs -> span [] (text emoteText :: cs)) re
 
-roomEventNoticeView : RoomEvent -> Maybe (Html Msg)
+roomEventNoticeView : MessageEvent -> Maybe (Html Msg)
 roomEventNoticeView = roomEventContent (span [ class "message-notice" ])
 
-roomEventTextView : RoomEvent -> Maybe (Html Msg)
+roomEventTextView : MessageEvent -> Maybe (Html Msg)
 roomEventTextView = roomEventContent (span [])
 
-roomEventImageView : ApiUrl -> RoomEvent -> Maybe (Html Msg)
+roomEventImageView : ApiUrl -> MessageEvent -> Maybe (Html Msg)
 roomEventImageView apiUrl re =
     let
         body = Decode.decodeValue (Decode.field "url" Decode.string) re.content
@@ -302,7 +304,7 @@ roomEventImageView apiUrl re =
             <| Maybe.map (contentRepositoryDownloadUrl apiUrl)
             <| Result.toMaybe body
 
-roomEventFileView : ApiUrl -> RoomEvent -> Maybe (Html Msg)
+roomEventFileView : ApiUrl -> MessageEvent -> Maybe (Html Msg)
 roomEventFileView apiUrl re =
     let
         decoder = Decode.map2 (\l r -> (l, r)) (Decode.field "url" Decode.string) (Decode.field "body" Decode.string)
@@ -312,7 +314,7 @@ roomEventFileView apiUrl re =
         <| Maybe.map (\(url, name) -> (contentRepositoryDownloadUrl apiUrl url, name))
         <| Result.toMaybe fileData
 
-roomEventVideoView : ApiUrl -> RoomEvent -> Maybe (Html Msg)
+roomEventVideoView : ApiUrl -> MessageEvent -> Maybe (Html Msg)
 roomEventVideoView apiUrl re =
     let
         decoder = Decode.map2 (\l r -> (l, r))
