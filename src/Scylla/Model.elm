@@ -1,9 +1,10 @@
 module Scylla.Model exposing (..)
 import Scylla.Api exposing (..)
-import Scylla.Sync exposing (SyncResponse, HistoryResponse, senderName, roomName, roomJoinedUsers, findFirst)
+import Scylla.Sync exposing (SyncResponse, HistoryResponse, senderName, roomName, roomJoinedUsers)
+import Scylla.ListUtils exposing (findFirst)
+import Scylla.Room exposing (OpenRooms)
 import Scylla.Sync.Rooms exposing (JoinedRoom)
-import Scylla.Sync.AccountData exposing (AccountData)
-import Scylla.AccountData exposing (directMessagesDecoder)
+import Scylla.Sync.AccountData exposing (AccountData, directMessagesDecoder)
 import Scylla.Login exposing (LoginResponse, Username, Password)
 import Scylla.UserData exposing (UserData)
 import Scylla.Route exposing (Route(..), RoomId)
@@ -37,6 +38,7 @@ type alias Model =
     , roomNames : Dict RoomId String
     , connected : Bool
     , searchText : String
+    , rooms : OpenRooms
     }
 
 type Msg =

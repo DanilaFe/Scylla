@@ -3,6 +3,7 @@ import Scylla.Model exposing (..)
 import Scylla.Sync exposing (..)
 import Scylla.Sync.Events exposing (..)
 import Scylla.Sync.Rooms exposing (..)
+import Scylla.Room exposing (RoomData, emptyOpenRooms, getRoomName)
 import Scylla.Route exposing (..)
 import Scylla.Fnv as Fnv
 import Scylla.Messages exposing (..)
@@ -10,6 +11,7 @@ import Scylla.Login exposing (Username)
 import Scylla.UserData exposing (UserData)
 import Scylla.Http exposing (fullMediaUrl)
 import Scylla.Api exposing (ApiUrl)
+import Scylla.ListUtils exposing (groupBy)
 import Html.Parser
 import Html.Parser.Util
 import Svg
@@ -85,11 +87,8 @@ reconnectView m = if m.connected
 roomListView : Model -> Html Msg
 roomListView m =
     let
-        rooms = Maybe.withDefault (Dict.empty)
-            <| Maybe.andThen .join
-            <| m.sync.rooms
         groups = roomGroups
-            <| Dict.toList rooms
+            <| Dict.toList m.rooms
         homeserverList = div [ class "homeservers-list" ]
             <| List.map (\(k, v) -> homeserverView m k v)
             <| Dict.toList groups
@@ -106,22 +105,22 @@ roomListView m =
             , homeserverList
             ]
 
-roomGroups : List (String, JoinedRoom) -> Dict String (List (String, JoinedRoom))
+roomGroups : List (String, RoomData) -> Dict String (List (String, RoomData))
 roomGroups jrs = groupBy (homeserver << Tuple.first) jrs
 
-homeserverView : Model -> String -> List (String, JoinedRoom) -> Html Msg
+homeserverView : Model -> String -> List (String, RoomData) -> Html Msg
 homeserverView m hs rs =
     let
         roomList = div [ class "rooms-list" ]
             <| List.map (\(rid, r) -> roomListElementView m rid r)
-            <| List.sortBy (\(rid, r) -> roomDisplayName m.roomNames rid) rs
+            <| List.sortBy (\(rid, r) -> getRoomName m.sync.accountData m.userData rid r) rs
     in
         div [ class "homeserver-wrapper" ] [ h3 [] [ text hs ], roomList ]
 
-roomListElementView : Model -> RoomId -> JoinedRoom -> Html Msg
-roomListElementView m rid jr =
+roomListElementView : Model -> RoomId -> RoomData -> Html Msg
+roomListElementView m rid rd =
     let
-        name = roomDisplayName m.roomNames rid
+        name = getRoomName m.sync.accountData m.userData rid rd
         isVisible = m.searchText == "" || (String.contains (String.toLower m.searchText) <| String.toLower name)
         isCurrentRoom = case currentRoomId m of
             Nothing -> False
@@ -133,10 +132,10 @@ roomListElementView m rid jr =
                 , ("hidden", not isVisible)
                 ]
             ]
-            <| roomNotificationCountView jr.unreadNotifications ++
+            <| roomNotificationCountView rd.unreadNotifications ++
                 [ a [ href <| roomUrl rid ] [ text name ] ]
 
-roomNotificationCountView : Maybe UnreadNotificationCounts -> List (Html Msg)
+roomNotificationCountView : UnreadNotificationCounts -> List (Html Msg)
 roomNotificationCountView ns =
     let
         wrap b = span
@@ -145,7 +144,7 @@ roomNotificationCountView ns =
                 , ("bright", b)
                 ]
             ]
-        getCount f = Maybe.withDefault 0 << Maybe.andThen f
+        getCount f = Maybe.withDefault 0 << f
     in
         case (getCount .notificationCount ns, getCount .highlightCount ns) of
             (0, 0) -> []

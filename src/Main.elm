@@ -1,8 +1,11 @@
 import Browser exposing (application, UrlRequest(..))
 import Browser.Navigation as Nav
 import Browser.Dom exposing (Viewport, setViewportOf)
+import Scylla.Room exposing (OpenRooms, applySync)
 import Scylla.Sync exposing (..)
 import Scylla.Sync.Events exposing (toMessageEvent, getType, getSender, getUnsigned)
+import Scylla.Sync.AccountData exposing (..)
+import Scylla.ListUtils exposing (..)
 import Scylla.Messages exposing (..)
 import Scylla.Login exposing (..)
 import Scylla.Api exposing (..)
@@ -14,7 +17,7 @@ import Scylla.UserData exposing (..)
 import Scylla.Notification exposing (..)
 import Scylla.Storage exposing (..)
 import Scylla.Markdown exposing (..)
-import Scylla.AccountData exposing (..)
+import Scylla.Room exposing (..)
 import Url exposing (Url)
 import Url.Parser exposing (parse)
 import Url.Builder
@@ -55,6 +58,7 @@ init _ url key =
             , roomNames = Dict.empty
             , connected = True
             , searchText = ""
+            , rooms = emptyOpenRooms
             }
         cmd = getStoreValuePort "scylla.loginInfo"
     in
@@ -355,6 +359,7 @@ updateSyncResponse model r notify =
             { model | sync = newSync sr
             , sending = sending (mergeSyncResponse model.sync sr)
             , roomNames = computeRoomsDisplayNames model.userData (newSync sr)
+            , rooms = applySync sr model.rooms
             }
     in
         case r of

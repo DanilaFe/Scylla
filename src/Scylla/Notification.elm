@@ -1,7 +1,6 @@
 port module Scylla.Notification exposing (..)
 import Scylla.Sync exposing (SyncResponse, joinedRoomsTimelineEvents)
 import Scylla.Sync.Events exposing (RoomEvent, MessageEvent, toMessageEvent)
-import Scylla.AccountData exposing (..)
 import Json.Decode as Decode exposing (string, field)
 import Dict
 

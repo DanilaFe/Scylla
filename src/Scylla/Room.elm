@@ -1,10 +1,12 @@
 module Scylla.Room exposing (..)
 import Scylla.Route exposing (RoomId)
 import Scylla.Sync exposing (SyncResponse)
+import Scylla.Login exposing (Username)
+import Scylla.UserData exposing (UserData)
 import Scylla.Sync.Events exposing (MessageEvent, StateEvent, toStateEvent, toMessageEvent)
-import Scylla.Sync.AccountData exposing (AccountData)
+import Scylla.Sync.AccountData exposing (AccountData, getDirectMessages)
 import Scylla.Sync.Rooms exposing (JoinedRoom, UnreadNotificationCounts, Ephemeral)
-import Json.Decode as Decode exposing (Value)
+import Json.Decode as Decode exposing (Decoder, Value, decodeValue)
 import Dict exposing (Dict)
 
 type alias RoomState = Dict (String, String) Value
@@ -108,3 +110,19 @@ applySync sr or =
             |> Maybe.withDefault Dict.empty
     in
         Dict.foldl applyJoinedRoom or joinedRooms
+
+getStateData : (String, String) -> Decoder a -> RoomData -> Maybe a
+getStateData k d rd = Dict.get k rd.roomState
+    |> Maybe.andThen (Result.toMaybe << decodeValue d)
+
+getRoomName : Maybe AccountData -> Dict Username UserData -> RoomId -> RoomData -> String
+getRoomName ad ud rid rd =
+    let
+        customName = getStateData ("m.room.name", "") Decode.string rd
+        direct = Maybe.andThen getDirectMessages ad
+            |> Maybe.andThen (Dict.get rid)
+    in
+        case (customName, direct) of
+            (Just cn, _) -> cn
+            (_, Just d) -> d
+            _ -> rid
