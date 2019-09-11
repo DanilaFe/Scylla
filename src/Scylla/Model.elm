@@ -1,6 +1,6 @@
 module Scylla.Model exposing (..)
 import Scylla.Api exposing (..)
-import Scylla.Sync exposing (SyncResponse, HistoryResponse, roomJoinedUsers)
+import Scylla.Sync exposing (SyncResponse, HistoryResponse)
 import Scylla.ListUtils exposing (findFirst)
 import Scylla.Room exposing (OpenRooms)
 import Scylla.Sync.Rooms exposing (JoinedRoom)

@@ -166,3 +166,14 @@ getTotalNotificationCountString or =
         case n of
             0 -> Nothing
             _ -> Just <| "(" ++ String.fromInt n ++ suffix ++ ")"
+
+getHomeserver : String -> String
+getHomeserver s =
+    let
+        colonIndex = Maybe.withDefault 0
+            <| Maybe.map ((+) 1)
+            <| List.head
+            <| String.indexes ":" s
+    in
+        String.dropLeft colonIndex s
+

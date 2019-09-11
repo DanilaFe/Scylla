@@ -3,7 +3,7 @@ import Scylla.Model exposing (..)
 import Scylla.Sync exposing (..)
 import Scylla.Sync.Events exposing (..)
 import Scylla.Sync.Rooms exposing (..)
-import Scylla.Room exposing (RoomData, emptyOpenRooms, getRoomName, getRoomTypingUsers)
+import Scylla.Room exposing (RoomData, emptyOpenRooms, getHomeserver, getRoomName, getRoomTypingUsers)
 import Scylla.Route exposing (..)
 import Scylla.Fnv as Fnv
 import Scylla.Messages exposing (..)
@@ -104,7 +104,7 @@ roomListView m =
             ]
 
 roomGroups : List (String, RoomData) -> Dict String (List (String, RoomData))
-roomGroups jrs = groupBy (homeserver << Tuple.first) jrs
+roomGroups jrs = groupBy (getHomeserver << Tuple.first) jrs
 
 homeserverView : Model -> String -> List (String, RoomData) -> Html Msg
 homeserverView m hs rs =
