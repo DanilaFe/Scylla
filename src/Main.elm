@@ -44,12 +44,8 @@ init _ url key =
             , loginUsername = ""
             , loginPassword = ""
             , apiUrl = "https://matrix.org"
-            , sync =
-                { nextBatch = ""
-                , rooms = Nothing
-                , presence = Nothing
-                , accountData = Nothing
-                }
+            , nextBatch = ""
+            , accountData = { events = Just [] }
             , errors = []
             , roomText = Dict.empty
             , sending = Dict.empty
@@ -67,7 +63,7 @@ init _ url key =
 view : Model -> Browser.Document Msg
 view m =
     let
-        notificationString = totalNotificationCountString m.sync
+        notificationString = getTotalNotificationCountString m.rooms
         titleString = case notificationString of
             Nothing -> "Scylla"
             Just s -> s ++ " Scylla"
@@ -191,17 +187,14 @@ updateHistoryResponse m r hr =
             <| h.chunk
     in
         case hr of
-            Ok h -> ({ m | sync = appendHistoryResponse m.sync r h }, userDataCmd h)
+            Ok h -> ({ m | rooms = applyHistoryResponse r h m.rooms }, userDataCmd h)
             Err _ -> ({ m | errors = "Unable to load older history from server"::m.errors }, Cmd.none)
 
 updateHistory : Model -> RoomId -> (Model, Cmd Msg)
 updateHistory m r =
     let
-        prevBatch = Maybe.andThen .prevBatch
-            <| Maybe.andThen .timeline 
-            <| Maybe.andThen (Dict.get r)  
-            <| Maybe.andThen .join 
-            <| m.sync.rooms
+        prevBatch = Dict.get r m.rooms
+            |> Maybe.andThen (.prevHistoryBatch)
         command = case prevBatch of
             Just pv -> getHistory m.apiUrl (Maybe.withDefault "" m.token) r pv
             Nothing -> Cmd.none
@@ -256,9 +249,10 @@ updateChangeRoute : Model -> Route -> (Model, Cmd Msg)
 updateChangeRoute m r =
     let
         joinedRoom = case r of
-            Room rid -> Maybe.andThen (Dict.get rid) <| Maybe.andThen .join <| m.sync.rooms
+            Room rid -> Dict.get rid m.rooms
             _ -> Nothing
-        lastMessage = Maybe.andThen (findLastEvent (((==) "m.room.message") << .type_)) <| Maybe.map (List.filterMap toMessageEvent) <| Maybe.andThen .events <| Maybe.andThen .timeline joinedRoom
+        lastMessage = Maybe.map .messages joinedRoom
+            |> Maybe.andThen (findLastEvent (((==) "m.room.message") << .type_))
         readMarkerCmd = case (r, lastMessage) of
             (Room rid, Just re) -> setReadMarkers m.apiUrl (Maybe.withDefault "" m.token) rid re.eventId <| Just re.eventId
             _ -> Cmd.none
@@ -314,7 +308,7 @@ updateSyncResponse : Model -> Result Http.Error SyncResponse -> Bool -> (Model, 
 updateSyncResponse model r notify =
     let
         token = Maybe.withDefault "" model.token
-        nextBatch = Result.withDefault model.sync.nextBatch
+        nextBatch = Result.withDefault model.nextBatch
             <| Result.map .nextBatch r
         syncCmd = sync model.apiUrl token nextBatch
         userDataCmd sr = newUsersCmd model
@@ -327,7 +321,7 @@ updateSyncResponse model r notify =
         notificationCmd sr = if notify
             then Maybe.withDefault Cmd.none
                     <| Maybe.map (\(s, e) -> sendNotificationPort
-                    { name = displayName model.userData e.sender
+                    { name = getDisplayName model.userData e.sender
                     , text = notificationText e
                     , room = s
                     }) <| notification sr
@@ -354,12 +348,11 @@ updateSyncResponse model r notify =
         receivedTransactions sr = List.filterMap (Maybe.andThen .transactionId << getUnsigned)
             <| allTimelineEvents sr
         sending sr = Dict.filter (\tid (rid, { body, id }) -> not <| List.member (String.fromInt tid) <| receivedTransactions sr) model.sending
-        newSync sr = mergeSyncResponse model.sync sr
         newModel sr =
-            { model | sync = newSync sr
-            , sending = sending (mergeSyncResponse model.sync sr)
-            , roomNames = computeRoomsDisplayNames model.userData (newSync sr)
+            { model | nextBatch = nextBatch
+            , sending = sending sr
             , rooms = applySync sr model.rooms
+            , accountData = applyAccountData sr.accountData model.accountData
             }
     in
         case r of

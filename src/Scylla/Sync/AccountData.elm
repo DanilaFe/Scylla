@@ -30,6 +30,16 @@ invertDirectMessages dmr =
         Dict.empty
         dmr
 
+applyAccountData : Maybe AccountData -> AccountData -> AccountData
+applyAccountData mad ad =
+    case mad of
+        Nothing -> ad
+        Just newAd ->
+            case (newAd.events, ad.events) of
+                (Just es, Nothing) -> newAd
+                (Just newEs, Just es) -> { events = Just (newEs ++ es) }
+                _ -> ad
+
 getAccountData : String -> Decode.Decoder a -> AccountData -> Maybe a
 getAccountData key d ad = ad.events
     |> Maybe.andThen (findFirst ((==) key << .type_))

@@ -2,6 +2,7 @@ module Scylla.Messages exposing (..)
 import Scylla.Sync.Events exposing (RoomEvent, MessageEvent, toMessageEvent)
 import Scylla.Login exposing (Username)
 import Scylla.Route exposing (RoomId)
+import Scylla.Room exposing (RoomData)
 import Dict exposing (Dict)
 
 type SendingMessageBody = TextMessage String
@@ -36,10 +37,10 @@ mergeMessages du xs =
     in
         appendNamed fmu fms fmsl
 
-receivedMessagesRoom : List RoomEvent -> List Message
-receivedMessagesRoom es = List.map Received
-    <| List.filter (\e -> e.type_ == "m.room.message")
-    <| List.filterMap toMessageEvent es
+receivedMessagesRoom : RoomData -> List Message
+receivedMessagesRoom rd = rd.messages
+    |> List.filter (\e -> e.type_ == "m.room.message")
+    |> List.map Received
 
 sendingMessagesRoom : RoomId -> Dict Int (RoomId, SendingMessage) -> List Message
 sendingMessagesRoom rid ms = List.map (\(tid, (_, sm)) -> Sending sm)

@@ -3,12 +3,12 @@ import Scylla.Model exposing (..)
 import Scylla.Sync exposing (..)
 import Scylla.Sync.Events exposing (..)
 import Scylla.Sync.Rooms exposing (..)
-import Scylla.Room exposing (RoomData, emptyOpenRooms, getRoomName)
+import Scylla.Room exposing (RoomData, emptyOpenRooms, getRoomName, getRoomTypingUsers)
 import Scylla.Route exposing (..)
 import Scylla.Fnv as Fnv
 import Scylla.Messages exposing (..)
 import Scylla.Login exposing (Username)
-import Scylla.UserData exposing (UserData)
+import Scylla.UserData exposing (UserData, getDisplayName)
 import Scylla.Http exposing (fullMediaUrl)
 import Scylla.Api exposing (ApiUrl)
 import Scylla.ListUtils exposing (groupBy)
@@ -48,10 +48,8 @@ stringColor s =
 viewFull : Model -> List (Html Msg)
 viewFull model = 
     let
-        room r = Maybe.map (\jr -> (r, jr))
-            <| Maybe.andThen (Dict.get r)
-            <| Maybe.andThen .join
-            <| model.sync.rooms
+        room r = Dict.get r model.rooms
+            |> Maybe.map (\rd -> (r, rd))
         core = case model.route of
             Login -> loginView model 
             Base -> baseView model Nothing
@@ -67,10 +65,10 @@ errorsView = div [ class "errors-wrapper" ] << List.indexedMap errorView
 errorView : Int -> String -> Html Msg
 errorView i s = div [ class "error-wrapper", onClick <| DismissError i ] [ iconView "alert-triangle", text s ]
 
-baseView : Model -> Maybe (RoomId, JoinedRoom) -> Html Msg
-baseView m jr = 
+baseView : Model -> Maybe (RoomId, RoomData) -> Html Msg
+baseView m rd = 
     let
-        roomView = Maybe.map (\(id, r) -> joinedRoomView m id r) jr
+        roomView = Maybe.map (\(id, r) -> joinedRoomView m id r) rd
         reconnect = reconnectView m
     in
         div [ class "base-wrapper" ] <| maybeHtml
@@ -113,14 +111,14 @@ homeserverView m hs rs =
     let
         roomList = div [ class "rooms-list" ]
             <| List.map (\(rid, r) -> roomListElementView m rid r)
-            <| List.sortBy (\(rid, r) -> getRoomName m.sync.accountData m.userData rid r) rs
+            <| List.sortBy (\(rid, r) -> getRoomName m.accountData m.userData rid r) rs
     in
         div [ class "homeserver-wrapper" ] [ h3 [] [ text hs ], roomList ]
 
 roomListElementView : Model -> RoomId -> RoomData -> Html Msg
 roomListElementView m rid rd =
     let
-        name = getRoomName m.sync.accountData m.userData rid rd
+        name = getRoomName m.accountData m.userData rid rd
         isVisible = m.searchText == "" || (String.contains (String.toLower m.searchText) <| String.toLower name)
         isCurrentRoom = case currentRoomId m of
             Nothing -> False
@@ -160,10 +158,10 @@ loginView m = div [ class "login-wrapper" ]
     , button [ onClick AttemptLogin ] [ text "Log In" ]
     ]
 
-joinedRoomView : Model -> RoomId -> JoinedRoom -> Html Msg
-joinedRoomView m roomId jr =
+joinedRoomView : Model -> RoomId -> RoomData -> Html Msg
+joinedRoomView m roomId rd =
     let
-        typing = List.map (displayName m.userData) <| roomTypingUsers jr
+        typing = List.map (getDisplayName m.userData) <| getRoomTypingUsers rd
         typingText = String.join ", " typing
         typingSuffix = case List.length typing of
             0 -> ""
@@ -184,18 +182,16 @@ joinedRoomView m roomId jr =
             ]
     in
         div [ class "room-wrapper" ]
-            [ h2 [] [ text <| roomDisplayName m.roomNames roomId ]
-            , lazy6 lazyMessagesView m.userData roomId jr m.apiUrl m.loginUsername m.sending
+            [ h2 [] [ text <| getRoomName m.accountData m.userData roomId rd ]
+            , lazy6 lazyMessagesView m.userData roomId rd m.apiUrl m.loginUsername m.sending
             , messageInput
             , typingWrapper
             ]
 
-lazyMessagesView : Dict String UserData -> RoomId -> JoinedRoom -> ApiUrl -> Username -> Dict Int (RoomId, SendingMessage) -> Html Msg
-lazyMessagesView ud rid jr au lu snd =
+lazyMessagesView : Dict String UserData -> RoomId -> RoomData -> ApiUrl -> Username -> Dict Int (RoomId, SendingMessage) -> Html Msg
+lazyMessagesView ud rid rd au lu snd =
     let
-        roomReceived = receivedMessagesRoom 
-            <| Maybe.withDefault []
-            <| Maybe.andThen .events jr.timeline
+        roomReceived = receivedMessagesRoom rd
         roomSending = sendingMessagesRoom rid snd
         renderedMessages = List.map (userMessagesView ud au)
             <| mergeMessages lu
@@ -230,7 +226,7 @@ messagesWrapperView rid es = div [ class "messages-wrapper", id "messages-wrappe
 
 senderView : Dict String UserData -> Username -> Html Msg
 senderView ud s =
-    span [ style "color" <| stringColor s, class "sender-wrapper" ] [ text <| displayName ud s ]
+    span [ style "color" <| stringColor s, class "sender-wrapper" ] [ text <| getDisplayName ud s ]
 
 userMessagesView : Dict String UserData -> ApiUrl -> (Username, List Message) -> Html Msg
 userMessagesView ud apiUrl (u, ms) = 
@@ -284,7 +280,7 @@ roomEventContent f re =
 roomEventEmoteView : Dict String UserData -> MessageEvent -> Maybe (Html Msg)
 roomEventEmoteView ud re =
     let
-        emoteText = "* " ++ displayName ud re.sender ++ " "
+        emoteText = "* " ++ getDisplayName ud re.sender ++ " "
     in
         roomEventContent (\cs -> span [] (text emoteText :: cs)) re
 

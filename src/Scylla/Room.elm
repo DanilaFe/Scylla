@@ -2,11 +2,13 @@ module Scylla.Room exposing (..)
 import Scylla.Route exposing (RoomId)
 import Scylla.Sync exposing (SyncResponse)
 import Scylla.Login exposing (Username)
-import Scylla.UserData exposing (UserData)
+import Scylla.UserData exposing (UserData, getDisplayName)
+import Scylla.Sync exposing (HistoryResponse)
 import Scylla.Sync.Events exposing (MessageEvent, StateEvent, toStateEvent, toMessageEvent)
-import Scylla.Sync.AccountData exposing (AccountData, getDirectMessages)
+import Scylla.Sync.AccountData exposing (AccountData, getDirectMessages, applyAccountData)
 import Scylla.Sync.Rooms exposing (JoinedRoom, UnreadNotificationCounts, Ephemeral)
-import Json.Decode as Decode exposing (Decoder, Value, decodeValue)
+import Scylla.ListUtils exposing (findFirst, uniqueBy)
+import Json.Decode as Decode exposing (Decoder, Value, decodeValue, field, string, list)
 import Dict exposing (Dict)
 
 type alias RoomState = Dict (String, String) Value
@@ -17,6 +19,7 @@ type alias RoomData =
     , accountData : AccountData
     , ephemeral : Ephemeral
     , unreadNotifications : UnreadNotificationCounts
+    , prevHistoryBatch : Maybe String
     , text : String
     }
 
@@ -35,6 +38,7 @@ emptyRoomData =
         { highlightCount = Just 0
         , notificationCount = Just 0
         }
+    , prevHistoryBatch = Nothing
     , text = ""
     }
 
@@ -59,16 +63,6 @@ changeRoomState jr rs =
             |> changeRoomStateEvents stateDiff
             |> changeRoomStateEvents timelineDiff
 
-changeAccountData : JoinedRoom -> AccountData -> AccountData
-changeAccountData jr ad =
-    case jr.accountData of
-        Nothing -> ad
-        Just newAd ->
-            case (newAd.events, ad.events) of
-                (Just es, Nothing) -> newAd
-                (Just newEs, Just es) -> { events = Just (newEs ++ es) }
-                _ -> ad
-
 changeTimeline : JoinedRoom -> List (MessageEvent) -> List (MessageEvent)
 changeTimeline jr tl =
     let
@@ -77,7 +71,7 @@ changeTimeline jr tl =
             |> Maybe.map (List.filterMap toMessageEvent)
             |> Maybe.withDefault []
     in
-        newMessages ++ tl
+        tl ++ newMessages
 
 changeEphemeral : JoinedRoom -> Ephemeral -> Ephemeral
 changeEphemeral jr e = Maybe.withDefault e jr.ephemeral
@@ -87,11 +81,12 @@ changeNotifications jr un = Maybe.withDefault un jr.unreadNotifications
 
 changeRoomData : JoinedRoom -> RoomData -> RoomData
 changeRoomData jr rd =
-    { rd | accountData = changeAccountData jr rd.accountData
+    { rd | accountData = applyAccountData jr.accountData rd.accountData
     , roomState = changeRoomState jr rd.roomState
     , messages = changeTimeline jr rd.messages
     , ephemeral = changeEphemeral jr rd.ephemeral
     , unreadNotifications = changeNotifications jr rd.unreadNotifications
+    , prevHistoryBatch = Maybe.andThen .prevBatch jr.timeline
     }
 
 updateRoomData : JoinedRoom -> Maybe RoomData -> Maybe RoomData
@@ -111,18 +106,63 @@ applySync sr or =
     in
         Dict.foldl applyJoinedRoom or joinedRooms
 
+addHistoryRoomData : HistoryResponse -> Maybe RoomData -> Maybe RoomData
+addHistoryRoomData hr = Maybe.map
+    (\rd ->
+        { rd | messages = uniqueBy .eventId
+            <| (List.reverse <| List.filterMap toMessageEvent hr.chunk) ++ rd.messages
+        , prevHistoryBatch = Just hr.end
+        })
+
+applyHistoryResponse : RoomId -> HistoryResponse -> OpenRooms -> OpenRooms
+applyHistoryResponse rid hr = Dict.update rid (addHistoryRoomData hr)
+
 getStateData : (String, String) -> Decoder a -> RoomData -> Maybe a
 getStateData k d rd = Dict.get k rd.roomState
     |> Maybe.andThen (Result.toMaybe << decodeValue d)
 
-getRoomName : Maybe AccountData -> Dict Username UserData -> RoomId -> RoomData -> String
+getEphemeralData : String -> Decoder a -> RoomData -> Maybe a
+getEphemeralData k d rd = rd.ephemeral.events
+    |> Maybe.andThen (findFirst ((==) k << .type_))
+    |> Maybe.andThen (Result.toMaybe << decodeValue d << .content)
+
+getRoomTypingUsers : RoomData -> List String
+getRoomTypingUsers = Maybe.withDefault [] 
+    << getEphemeralData "m.typing" (field "user_ids" (list string))
+
+getRoomName : AccountData -> Dict Username UserData -> RoomId -> RoomData -> String
 getRoomName ad ud rid rd =
     let
-        customName = getStateData ("m.room.name", "") Decode.string rd
-        direct = Maybe.andThen getDirectMessages ad
+        customName = getStateData ("m.room.name", "") (field "name" (string)) rd
+        direct = getDirectMessages ad
             |> Maybe.andThen (Dict.get rid)
     in
         case (customName, direct) of
             (Just cn, _) -> cn
-            (_, Just d) -> d
+            (_, Just d) -> getDisplayName ud d
             _ -> rid
+
+getRoomNotificationCount : RoomData -> (Int, Int)
+getRoomNotificationCount rd =
+    ( Maybe.withDefault 0 rd.unreadNotifications.notificationCount
+    , Maybe.withDefault 0 rd.unreadNotifications.highlightCount
+    )
+
+getTotalNotificationCount : OpenRooms -> (Int, Int)
+getTotalNotificationCount =
+    let
+        sumTuples (x1, y1) (x2, y2) = (x1+x2, y1+y2)
+    in
+        Dict.foldl (\_ -> sumTuples << getRoomNotificationCount) (0, 0)
+
+getTotalNotificationCountString : OpenRooms -> Maybe String
+getTotalNotificationCountString or =
+    let
+        (n, h) = getTotalNotificationCount or
+        suffix = case h of
+            0 -> ""
+            _ -> "!"
+    in
+        case n of
+            0 -> Nothing
+            _ -> Just <| "(" ++ String.fromInt n ++ suffix ++ ")"

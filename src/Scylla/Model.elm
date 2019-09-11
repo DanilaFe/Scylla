@@ -1,6 +1,6 @@
 module Scylla.Model exposing (..)
 import Scylla.Api exposing (..)
-import Scylla.Sync exposing (SyncResponse, HistoryResponse, senderName, roomName, roomJoinedUsers)
+import Scylla.Sync exposing (SyncResponse, HistoryResponse, roomJoinedUsers)
 import Scylla.ListUtils exposing (findFirst)
 import Scylla.Room exposing (OpenRooms)
 import Scylla.Sync.Rooms exposing (JoinedRoom)
@@ -29,7 +29,8 @@ type alias Model =
     , loginUsername : Username
     , loginPassword : Password
     , apiUrl : ApiUrl
-    , sync : SyncResponse
+    , accountData : AccountData
+    , nextBatch : String
     , errors : List String
     , roomText : Dict RoomId String
     , sending : Dict Int (RoomId, SendingMessage)
@@ -77,41 +78,6 @@ type Msg =
     | AttemptReconnect -- User wants to reconnect to server
     | UpdateSearchText String -- Change search text in room list
 
-displayName : Dict String UserData -> Username -> String
-displayName ud s = Maybe.withDefault (senderName s) <| Maybe.andThen .displayName <| Dict.get s ud
-
-roomDisplayName : Dict RoomId String -> RoomId -> String
-roomDisplayName rd rid =
-    Maybe.withDefault "<No Name>" <| Dict.get rid rd
-
-computeRoomDisplayName : Dict String UserData -> Maybe AccountData -> RoomId -> JoinedRoom -> Maybe String
-computeRoomDisplayName ud ad rid jr =
-    let
-        customName = roomName jr
-        direct = ad
-            |> Maybe.andThen .events
-            |> Maybe.andThen (findFirst ((==) "m.direct" << .type_))
-            |> Maybe.map (Decode.decodeValue directMessagesDecoder << .content)
-            |> Maybe.andThen Result.toMaybe
-            |> Maybe.andThen (Dict.get rid)
-    in
-        case (customName, direct) of
-            (Just s, _) -> customName
-            (_, Just u) -> direct
-            _ -> Nothing
-
-computeRoomsDisplayNames : Dict String UserData -> SyncResponse -> Dict String String
-computeRoomsDisplayNames ud sr =
-    sr.rooms
-    |> Maybe.andThen .join
-    |> Maybe.map Dict.toList
-    |> Maybe.map (List.foldl
-        (\(rid, jr) d ->
-            computeRoomDisplayName ud sr.accountData rid jr 
-            |> Maybe.map (\n -> Dict.insert rid n d) 
-            |> Maybe.withDefault d) Dict.empty)
-    |> Maybe.withDefault Dict.empty
-
 roomUrl : String -> String
 roomUrl s = Url.Builder.absolute [ "room", s ] []
 
@@ -120,13 +86,6 @@ loginUrl = Url.Builder.absolute [ "login" ] []
 
 newUsers : Model -> List Username -> List Username
 newUsers m lus = List.filter (\u -> not <| Dict.member u m.userData) lus
-
-joinedRooms : Model -> Dict RoomId JoinedRoom
-joinedRooms m = Maybe.withDefault Dict.empty <| Maybe.andThen .join <| m.sync.rooms
-
-currentRoom : Model -> Maybe JoinedRoom
-currentRoom m =
-    Maybe.andThen (\s -> Dict.get s <| joinedRooms m) <| currentRoomId m
 
 currentRoomId : Model -> Maybe RoomId
 currentRoomId m = case m.route of

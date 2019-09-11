@@ -178,15 +178,6 @@ appendHistoryResponse sr r hr =
         { sr | rooms = newRooms }
 
 -- Business Logic: Names
-senderName : String -> String
-senderName s =
-    let
-        colonIndex = Maybe.withDefault -1 
-            <| List.head
-            <| String.indexes ":" s
-    in
-        String.slice 1 colonIndex s
-
 homeserver : String -> String
 homeserver s =
     let
