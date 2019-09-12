@@ -191,10 +191,10 @@ joinedRoomView m roomId rd =
 lazyMessagesView : Dict String UserData -> RoomId -> RoomData -> ApiUrl -> Username -> Dict Int (RoomId, SendingMessage) -> Html Msg
 lazyMessagesView ud rid rd au lu snd =
     let
-        roomReceived = receivedMessagesRoom rd
-        roomSending = sendingMessagesRoom rid snd
+        roomReceived = getReceivedMessages rd
+        roomSending = getSendingMessages rid snd
         renderedMessages = List.map (userMessagesView ud au)
-            <| mergeMessages lu
+            <| groupMessages lu
             <| roomReceived ++ roomSending
     in
         messagesWrapperView rid renderedMessages

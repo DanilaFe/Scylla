@@ -138,8 +138,8 @@ login apiUrl username password = request
     , tracker = Nothing
     }
 
-userData : ApiUrl -> ApiToken -> Username -> Cmd Msg
-userData apiUrl token username = request
+getUserData : ApiUrl -> ApiToken -> Username -> Cmd Msg
+getUserData apiUrl token username = request
     { method = "GET"
     , headers = authenticatedHeaders token
     , url = (fullClientUrl apiUrl) ++ "/profile/" ++ username

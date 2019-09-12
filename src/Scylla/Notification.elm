@@ -13,13 +13,13 @@ type alias Notification =
 port sendNotificationPort : Notification -> Cmd msg
 port onNotificationClickPort : (String -> msg) -> Sub msg
 
-notificationText : MessageEvent -> String
-notificationText re = case (Decode.decodeValue (field "msgtype" string) re.content) of
+getText : MessageEvent -> String
+getText re = case (Decode.decodeValue (field "msgtype" string) re.content) of
     Ok "m.text" -> Result.withDefault "" <| (Decode.decodeValue (field "body" string) re.content)
     _ -> ""
 
-joinedRoomNotificationEvents : SyncResponse -> List (String, MessageEvent)
-joinedRoomNotificationEvents s =
+getNotificationEvents : SyncResponse -> List (String, MessageEvent)
+getNotificationEvents s =
     let
         applyPair k = List.map (\v -> (k, v))
     in

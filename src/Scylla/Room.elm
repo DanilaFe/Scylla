@@ -142,8 +142,8 @@ getRoomName ad ud rid rd =
             (_, Just d) -> getDisplayName ud d
             _ -> rid
 
-getRoomNotificationCount : RoomData -> (Int, Int)
-getRoomNotificationCount rd =
+getNotificationCount : RoomData -> (Int, Int)
+getNotificationCount rd =
     ( Maybe.withDefault 0 rd.unreadNotifications.notificationCount
     , Maybe.withDefault 0 rd.unreadNotifications.highlightCount
     )
@@ -153,7 +153,7 @@ getTotalNotificationCount =
     let
         sumTuples (x1, y1) (x2, y2) = (x1+x2, y1+y2)
     in
-        Dict.foldl (\_ -> sumTuples << getRoomNotificationCount) (0, 0)
+        Dict.foldl (\_ -> sumTuples << getNotificationCount) (0, 0)
 
 getTotalNotificationCountString : OpenRooms -> Maybe String
 getTotalNotificationCountString or =
