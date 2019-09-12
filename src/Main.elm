@@ -114,7 +114,7 @@ requestScrollCmd = Task.attempt ViewportAfterMessage (Browser.Dom.getViewportOf 
 
 newUsersCmd : Model -> List Username -> Cmd Msg
 newUsersCmd m us = m.token
-    |> Maybe.map (\t -> List.map (userData m.apiUrl t) us)
+    |> Maybe.map (\t -> List.map (getUserData m.apiUrl t) us)
     |> Maybe.withDefault []
     |> Cmd.batch
 
@@ -317,12 +317,12 @@ updateSyncResponse model r notify =
         notification sr = findFirstBy
             (\(s, e) -> e.originServerTs)
             (\(s, e) -> e.sender /= model.loginUsername)
-            <| joinedRoomNotificationEvents sr
+            <| getNotificationEvents sr
         notificationCmd sr = if notify
             then Maybe.withDefault Cmd.none
                     <| Maybe.map (\(s, e) -> sendNotificationPort
                     { name = getDisplayName model.userData e.sender
-                    , text = notificationText e
+                    , text = getText e
                     , room = s
                     }) <| notification sr
             else Cmd.none
