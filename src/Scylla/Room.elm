@@ -86,7 +86,10 @@ changeRoomData jr rd =
     , messages = changeTimeline jr rd.messages
     , ephemeral = changeEphemeral jr rd.ephemeral
     , unreadNotifications = changeNotifications jr rd.unreadNotifications
-    , prevHistoryBatch = Maybe.andThen .prevBatch jr.timeline
+    , prevHistoryBatch =
+        case rd.prevHistoryBatch of
+            Nothing -> Maybe.andThen .prevBatch jr.timeline
+            Just _ -> rd.prevHistoryBatch
     }
 
 updateRoomData : JoinedRoom -> Maybe RoomData -> Maybe RoomData
