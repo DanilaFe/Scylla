@@ -38,8 +38,8 @@ type RoomEvent
 
 roomEventDecoder : Decoder RoomEvent
 roomEventDecoder = oneOf
-    [ Decode.map MessageRoomEvent messageEventDecoder
-    , Decode.map StateRoomEvent stateEventDecoder
+    [ Decode.map StateRoomEvent stateEventDecoder
+    , Decode.map MessageRoomEvent messageEventDecoder
     ]
 
 type alias MessageEvent =
