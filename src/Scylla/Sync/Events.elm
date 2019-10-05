@@ -124,6 +124,12 @@ getType re =
         StateRoomEvent e -> e.type_
         MessageRoomEvent e -> e.type_
 
+getContent : RoomEvent -> Decode.Value
+getContent re =
+    case re of
+        StateRoomEvent e -> e.content
+        MessageRoomEvent e -> e.content
+
 toStateEvent : RoomEvent -> Maybe StateEvent
 toStateEvent re =
     case re of

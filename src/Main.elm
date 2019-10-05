@@ -5,6 +5,7 @@ import Scylla.Room exposing (OpenRooms, applySync)
 import Scylla.Sync exposing (..)
 import Scylla.Sync.Events exposing (toMessageEvent, getType, getSender, getUnsigned)
 import Scylla.Sync.AccountData exposing (..)
+import Scylla.Sync.Push exposing (..)
 import Scylla.ListUtils exposing (..)
 import Scylla.Messages exposing (..)
 import Scylla.Login exposing (..)
@@ -51,7 +52,6 @@ init _ url key =
             , sending = Dict.empty
             , transactionId = 0
             , userData = Dict.empty
-            , roomNames = Dict.empty
             , connected = True
             , searchText = ""
             , rooms = emptyOpenRooms
@@ -314,10 +314,13 @@ updateSyncResponse model r notify =
         userDataCmd sr = newUsersCmd model
             <| newUsers model
             <| allUsers sr
-        notification sr = findFirstBy
-            (\(s, e) -> e.originServerTs)
-            (\(s, e) -> e.sender /= model.loginUsername)
-            <| getNotificationEvents sr
+        notification sr = 
+            getPushRuleset model.accountData
+            |> Maybe.map (\rs -> getNotificationEvents rs sr)
+            |> Maybe.withDefault []
+            |> findFirstBy
+                (\(s, e) -> e.originServerTs)
+                (\(s, e) -> e.sender /= model.loginUsername)
         notificationCmd sr = if notify
             then Maybe.withDefault Cmd.none
                     <| Maybe.map (\(s, e) -> sendNotificationPort

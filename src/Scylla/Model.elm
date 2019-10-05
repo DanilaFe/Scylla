@@ -4,6 +4,7 @@ import Scylla.Sync exposing (SyncResponse, HistoryResponse)
 import Scylla.ListUtils exposing (findFirst)
 import Scylla.Room exposing (OpenRooms)
 import Scylla.Sync.Rooms exposing (JoinedRoom)
+import Scylla.Sync.Push exposing (Ruleset)
 import Scylla.Sync.AccountData exposing (AccountData, directMessagesDecoder)
 import Scylla.Login exposing (LoginResponse, Username, Password)
 import Scylla.UserData exposing (UserData)
@@ -36,7 +37,6 @@ type alias Model =
     , sending : Dict Int (RoomId, SendingMessage)
     , transactionId : Int
     , userData : Dict Username UserData
-    , roomNames : Dict RoomId String
     , connected : Bool
     , searchText : String
     , rooms : OpenRooms

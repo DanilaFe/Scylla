@@ -2,7 +2,8 @@ module Scylla.Sync.AccountData exposing (..)
 import Scylla.ListUtils exposing (..)
 import Scylla.Sync.DecodeTools exposing (maybeDecode)
 import Scylla.Sync.Events exposing (Event, eventDecoder)
-import Json.Decode as Decode exposing (Decoder, list, decodeValue)
+import Scylla.Sync.Push exposing (Ruleset, rulesetDecoder)
+import Json.Decode as Decode exposing (Decoder, list, field, decodeValue)
 import Dict exposing (Dict)
 
 type alias AccountData =
@@ -48,3 +49,6 @@ getAccountData key d ad = ad.events
 
 getDirectMessages : AccountData -> Maybe DirectMessages
 getDirectMessages = getAccountData "m.direct" directMessagesDecoder
+
+getPushRuleset : AccountData -> Maybe Ruleset
+getPushRuleset = getAccountData "m.push_rules" (field "global" rulesetDecoder)
