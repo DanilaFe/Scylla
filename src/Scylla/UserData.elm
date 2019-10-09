@@ -15,11 +15,6 @@ userDataDecoder =
         |> optional "displayname" (Decode.map Just string) Nothing
         |> optional "avatar_url" (Decode.map Just string) Nothing
 
-getDisplayName : Dict Username UserData -> Username -> String
-getDisplayName ud s = Dict.get s ud
-    |> Maybe.andThen .displayName 
-    |> Maybe.withDefault (getSenderName s) 
-
 getSenderName : Username -> String
 getSenderName s =
     let

@@ -4,7 +4,7 @@ import Scylla.Room exposing (getLocalDisplayName)
 import Scylla.Sync exposing (SyncResponse, HistoryResponse)
 import Scylla.ListUtils exposing (findFirst)
 import Scylla.Room exposing (OpenRooms)
-import Scylla.UserData exposing (UserData)
+import Scylla.UserData exposing (UserData, getSenderName)
 import Scylla.Sync.Rooms exposing (JoinedRoom)
 import Scylla.Sync.Push exposing (Ruleset)
 import Scylla.Sync.AccountData exposing (AccountData, directMessagesDecoder)
@@ -93,4 +93,4 @@ roomLocalDisplayName : Model -> RoomId -> Username -> String
 roomLocalDisplayName m rid u =
     case Dict.get rid m.rooms of
         Just rd -> getLocalDisplayName rd u
-        _ -> u
+        _ -> getSenderName u

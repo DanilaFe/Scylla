@@ -2,6 +2,7 @@ module Scylla.Room exposing (..)
 import Scylla.Route exposing (RoomId)
 import Scylla.Sync exposing (SyncResponse)
 import Scylla.Login exposing (Username)
+import Scylla.UserData exposing (getSenderName)
 import Scylla.Sync exposing (HistoryResponse)
 import Scylla.Sync.Events exposing (MessageEvent, StateEvent, toStateEvent, toMessageEvent)
 import Scylla.Sync.AccountData exposing (AccountData, getDirectMessages, applyAccountData)
@@ -147,7 +148,7 @@ getRoomName ad rid rd =
 getLocalDisplayName : RoomData -> Username -> String
 getLocalDisplayName rd u =
     getStateData ("m.room.member", u) (field "displayname" string) rd
-    |> Maybe.withDefault u
+    |> Maybe.withDefault (getSenderName u)
 
 getNotificationCount : RoomData -> (Int, Int)
 getNotificationCount rd =
