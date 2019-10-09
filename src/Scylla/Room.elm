@@ -2,7 +2,6 @@ module Scylla.Room exposing (..)
 import Scylla.Route exposing (RoomId)
 import Scylla.Sync exposing (SyncResponse)
 import Scylla.Login exposing (Username)
-import Scylla.UserData exposing (UserData, getDisplayName)
 import Scylla.Sync exposing (HistoryResponse)
 import Scylla.Sync.Events exposing (MessageEvent, StateEvent, toStateEvent, toMessageEvent)
 import Scylla.Sync.AccountData exposing (AccountData, getDirectMessages, applyAccountData)
@@ -133,8 +132,8 @@ getRoomTypingUsers : RoomData -> List String
 getRoomTypingUsers = Maybe.withDefault [] 
     << getEphemeralData "m.typing" (field "user_ids" (list string))
 
-getRoomName : AccountData -> Dict Username UserData -> RoomId -> RoomData -> String
-getRoomName ad ud rid rd =
+getRoomName : AccountData -> RoomId -> RoomData -> String
+getRoomName ad rid rd =
     let
         customName = getStateData ("m.room.name", "") (field "name" (string)) rd
         direct = getDirectMessages ad
@@ -142,8 +141,13 @@ getRoomName ad ud rid rd =
     in
         case (customName, direct) of
             (Just cn, _) -> cn
-            (_, Just d) -> getDisplayName ud d
+            (_, Just d) -> getLocalDisplayName rd d
             _ -> rid
+
+getLocalDisplayName : RoomData -> Username -> String
+getLocalDisplayName rd u =
+    getStateData ("m.room.member", u) (field "displayname" string) rd
+    |> Maybe.withDefault u
 
 getNotificationCount : RoomData -> (Int, Int)
 getNotificationCount rd =

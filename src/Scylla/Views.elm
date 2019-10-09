@@ -3,12 +3,11 @@ import Scylla.Model exposing (..)
 import Scylla.Sync exposing (..)
 import Scylla.Sync.Events exposing (..)
 import Scylla.Sync.Rooms exposing (..)
-import Scylla.Room exposing (RoomData, emptyOpenRooms, getHomeserver, getRoomName, getRoomTypingUsers)
+import Scylla.Room exposing (RoomData, emptyOpenRooms, getHomeserver, getRoomName, getRoomTypingUsers, getLocalDisplayName)
 import Scylla.Route exposing (..)
 import Scylla.Fnv as Fnv
 import Scylla.Messages exposing (..)
 import Scylla.Login exposing (Username)
-import Scylla.UserData exposing (UserData, getDisplayName)
 import Scylla.Http exposing (fullMediaUrl)
 import Scylla.Api exposing (ApiUrl)
 import Scylla.ListUtils exposing (groupBy)
@@ -21,7 +20,7 @@ import Json.Decode as Decode
 import Html exposing (Html, Attribute, div, input, text, button, div, span, a, h2, h3, table, td, tr, img, textarea, video, source, p)
 import Html.Attributes exposing (type_, placeholder, value, href, class, style, src, id, rows, controls, src, classList)
 import Html.Events exposing (onInput, onClick, preventDefaultOn)
-import Html.Lazy exposing (lazy6)
+import Html.Lazy exposing (lazy5)
 import Dict exposing (Dict)
 import Tuple
 
@@ -111,14 +110,14 @@ homeserverView m hs rs =
     let
         roomList = div [ class "rooms-list" ]
             <| List.map (\(rid, r) -> roomListElementView m rid r)
-            <| List.sortBy (\(rid, r) -> getRoomName m.accountData m.userData rid r) rs
+            <| List.sortBy (\(rid, r) -> getRoomName m.accountData rid r) rs
     in
         div [ class "homeserver-wrapper" ] [ h3 [] [ text hs ], roomList ]
 
 roomListElementView : Model -> RoomId -> RoomData -> Html Msg
 roomListElementView m rid rd =
     let
-        name = getRoomName m.accountData m.userData rid rd
+        name = getRoomName m.accountData rid rd
         isVisible = m.searchText == "" || (String.contains (String.toLower m.searchText) <| String.toLower name)
         isCurrentRoom = case currentRoomId m of
             Nothing -> False
@@ -161,7 +160,7 @@ loginView m = div [ class "login-wrapper" ]
 joinedRoomView : Model -> RoomId -> RoomData -> Html Msg
 joinedRoomView m roomId rd =
     let
-        typing = List.map (getDisplayName m.userData) <| getRoomTypingUsers rd
+        typing = List.map (getLocalDisplayName rd) <| getRoomTypingUsers rd
         typingText = String.join ", " typing
         typingSuffix = case List.length typing of
             0 -> ""
@@ -182,18 +181,18 @@ joinedRoomView m roomId rd =
             ]
     in
         div [ class "room-wrapper" ]
-            [ h2 [] [ text <| getRoomName m.accountData m.userData roomId rd ]
-            , lazy6 lazyMessagesView m.userData roomId rd m.apiUrl m.loginUsername m.sending
+            [ h2 [] [ text <| getRoomName m.accountData roomId rd ]
+            , lazy5 lazyMessagesView roomId rd m.apiUrl m.loginUsername m.sending
             , messageInput
             , typingWrapper
             ]
 
-lazyMessagesView : Dict String UserData -> RoomId -> RoomData -> ApiUrl -> Username -> Dict Int (RoomId, SendingMessage) -> Html Msg
-lazyMessagesView ud rid rd au lu snd =
+lazyMessagesView : RoomId -> RoomData -> ApiUrl -> Username -> Dict Int (RoomId, SendingMessage) -> Html Msg
+lazyMessagesView rid rd au lu snd =
     let
         roomReceived = getReceivedMessages rd
         roomSending = getSendingMessages rid snd
-        renderedMessages = List.map (userMessagesView ud au)
+        renderedMessages = List.map (userMessagesView rd au)
             <| groupMessages lu
             <| roomReceived ++ roomSending
     in
@@ -224,38 +223,38 @@ messagesWrapperView rid es = div [ class "messages-wrapper", id "messages-wrappe
     , table [ class "messages-table" ] es
     ]
 
-senderView : Dict String UserData -> Username -> Html Msg
-senderView ud s =
-    span [ style "color" <| stringColor s, class "sender-wrapper" ] [ text <| getDisplayName ud s ]
+senderView : RoomData -> Username -> Html Msg
+senderView rd s =
+    span [ style "color" <| stringColor s, class "sender-wrapper" ] [ text <| getLocalDisplayName rd s ]
 
-userMessagesView : Dict String UserData -> ApiUrl -> (Username, List Message) -> Html Msg
-userMessagesView ud apiUrl (u, ms) = 
+userMessagesView : RoomData -> ApiUrl -> (Username, List Message) -> Html Msg
+userMessagesView rd apiUrl (u, ms) = 
     let
         wrap h = div [ class "message" ] [ h ]
     in
         tr []
-            [ td [] [ senderView ud u ]
-            , td [] <| List.map wrap <| List.filterMap (messageView ud apiUrl) ms
+            [ td [] [ senderView rd u ]
+            , td [] <| List.map wrap <| List.filterMap (messageView rd apiUrl) ms
             ]
 
-messageView : Dict String UserData -> ApiUrl -> Message -> Maybe (Html Msg)
-messageView ud apiUrl msg = case msg of
+messageView : RoomData -> ApiUrl -> Message -> Maybe (Html Msg)
+messageView rd apiUrl msg = case msg of
     Sending t -> Just <| sendingMessageView t
-    Received re -> roomEventView ud apiUrl re
+    Received re -> roomEventView rd apiUrl re
 
 sendingMessageView : SendingMessage -> Html Msg
 sendingMessageView msg = case msg.body of
     TextMessage t -> span [ class "sending"] [ text t ]
 
-roomEventView : Dict String UserData -> ApiUrl -> MessageEvent -> Maybe (Html Msg)
-roomEventView ud apiUrl re =
+roomEventView : RoomData -> ApiUrl -> MessageEvent -> Maybe (Html Msg)
+roomEventView rd apiUrl re =
     let
         msgtype = Decode.decodeValue (Decode.field "msgtype" Decode.string) re.content
     in
         case msgtype of
             Ok "m.text" -> roomEventTextView re
             Ok "m.notice" -> roomEventNoticeView re
-            Ok "m.emote" -> roomEventEmoteView ud re
+            Ok "m.emote" -> roomEventEmoteView rd re
             Ok "m.image" -> roomEventImageView apiUrl re
             Ok "m.file" -> roomEventFileView apiUrl re
             Ok "m.video" -> roomEventVideoView apiUrl re
@@ -277,10 +276,10 @@ roomEventContent f re =
             Just c -> Just <| f c
             Nothing -> Maybe.map (f << List.singleton << text) <| Result.toMaybe body
 
-roomEventEmoteView : Dict String UserData -> MessageEvent -> Maybe (Html Msg)
-roomEventEmoteView ud re =
+roomEventEmoteView : RoomData -> MessageEvent -> Maybe (Html Msg)
+roomEventEmoteView rd re =
     let
-        emoteText = "* " ++ getDisplayName ud re.sender ++ " "
+        emoteText = "* " ++ getLocalDisplayName rd re.sender ++ " "
     in
         roomEventContent (\cs -> span [] (text emoteText :: cs)) re
 

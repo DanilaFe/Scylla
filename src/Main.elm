@@ -14,7 +14,6 @@ import Scylla.Model exposing (..)
 import Scylla.Http exposing (..)
 import Scylla.Views exposing (viewFull)
 import Scylla.Route exposing (Route(..), RoomId)
-import Scylla.UserData exposing (..)
 import Scylla.Notification exposing (..)
 import Scylla.Storage exposing (..)
 import Scylla.Markdown exposing (..)
@@ -51,7 +50,6 @@ init _ url key =
             , roomText = Dict.empty
             , sending = Dict.empty
             , transactionId = 0
-            , userData = Dict.empty
             , connected = True
             , searchText = ""
             , rooms = emptyOpenRooms
@@ -86,7 +84,7 @@ update msg model = case msg of
     ReceiveLoginResponse a r -> updateLoginResponse model a r
     ReceiveFirstSyncResponse r -> updateSyncResponse model r False
     ReceiveSyncResponse r -> updateSyncResponse model r True
-    ReceiveUserData s r -> updateUserData model s r
+    ReceiveUserData s r -> (model, Cmd.none)
     ChangeRoomText r t -> updateChangeRoomText model r t
     SendRoomText r -> updateSendRoomText model r
     SendRoomTextResponse t r -> updateSendRoomTextResponse model t r
@@ -111,12 +109,6 @@ update msg model = case msg of
 
 requestScrollCmd : Cmd Msg
 requestScrollCmd = Task.attempt ViewportAfterMessage (Browser.Dom.getViewportOf "messages-wrapper")
-
-newUsersCmd : Model -> List Username -> Cmd Msg
-newUsersCmd m us = m.token
-    |> Maybe.map (\t -> List.map (getUserData m.apiUrl t) us)
-    |> Maybe.withDefault []
-    |> Cmd.batch
 
 updateSendRoomTextResponse : Model -> Int -> Result Http.Error String -> (Model, Cmd Msg)
 updateSendRoomTextResponse m t r =
@@ -179,16 +171,9 @@ updateUploadSelected m rid f fs msg =
 
 updateHistoryResponse : Model -> RoomId -> Result Http.Error HistoryResponse -> (Model, Cmd Msg)
 updateHistoryResponse m r hr =
-    let
-        userDataCmd h = newUsersCmd m
-            <| newUsers m
-            <| uniqueBy identity
-            <| List.map getSender
-            <| h.chunk
-    in
-        case hr of
-            Ok h -> ({ m | rooms = applyHistoryResponse r h m.rooms }, userDataCmd h)
-            Err _ -> ({ m | errors = "Unable to load older history from server"::m.errors }, Cmd.none)
+    case hr of
+        Ok h -> ({ m | rooms = applyHistoryResponse r h m.rooms }, Cmd.none)
+        Err _ -> ({ m | errors = "Unable to load older history from server"::m.errors }, Cmd.none)
 
 updateHistory : Model -> RoomId -> (Model, Cmd Msg)
 updateHistory m r =
@@ -268,11 +253,6 @@ updateViewportAfterMessage m vr =
     in
         (m, Result.withDefault Cmd.none <| Result.map cmd vr)
 
-updateUserData : Model -> String -> Result Http.Error UserData -> (Model, Cmd Msg)
-updateUserData m s r = case r of
-    Ok ud -> ({ m | userData = Dict.insert s ud m.userData }, Cmd.none)
-    Err e -> ({ m | errors = ("Failed to retrieve user data for user " ++ s)::m.errors }, Cmd.none)
-
 updateSendRoomText : Model -> RoomId -> (Model, Cmd Msg)
 updateSendRoomText m r =
     let
@@ -311,9 +291,6 @@ updateSyncResponse model r notify =
         nextBatch = Result.withDefault model.nextBatch
             <| Result.map .nextBatch r
         syncCmd = sync model.apiUrl token nextBatch
-        userDataCmd sr = newUsersCmd model
-            <| newUsers model
-            <| allUsers sr
         notification sr = 
             getPushRuleset model.accountData
             |> Maybe.map (\rs -> getNotificationEvents rs sr)
@@ -324,7 +301,7 @@ updateSyncResponse model r notify =
         notificationCmd sr = if notify
             then Maybe.withDefault Cmd.none
                     <| Maybe.map (\(s, e) -> sendNotificationPort
-                    { name = getDisplayName model.userData e.sender
+                    { name = roomLocalDisplayName model s e.sender
                     , text = getText e
                     , room = s
                     }) <| notification sr
@@ -362,7 +339,6 @@ updateSyncResponse model r notify =
             Ok sr -> (newModel sr
                 , Cmd.batch
                 [ syncCmd
-                , userDataCmd sr
                 , notificationCmd sr
                 , setScrollCmd sr
                 , setReadReceiptCmd sr

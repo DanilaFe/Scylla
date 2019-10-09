@@ -1,13 +1,14 @@
 module Scylla.Model exposing (..)
 import Scylla.Api exposing (..)
+import Scylla.Room exposing (getLocalDisplayName)
 import Scylla.Sync exposing (SyncResponse, HistoryResponse)
 import Scylla.ListUtils exposing (findFirst)
 import Scylla.Room exposing (OpenRooms)
+import Scylla.UserData exposing (UserData)
 import Scylla.Sync.Rooms exposing (JoinedRoom)
 import Scylla.Sync.Push exposing (Ruleset)
 import Scylla.Sync.AccountData exposing (AccountData, directMessagesDecoder)
 import Scylla.Login exposing (LoginResponse, Username, Password)
-import Scylla.UserData exposing (UserData)
 import Scylla.Route exposing (Route(..), RoomId)
 import Scylla.Messages exposing (..)
 import Scylla.Storage exposing (..)
@@ -36,7 +37,6 @@ type alias Model =
     , roomText : Dict RoomId String
     , sending : Dict Int (RoomId, SendingMessage)
     , transactionId : Int
-    , userData : Dict Username UserData
     , connected : Bool
     , searchText : String
     , rooms : OpenRooms
@@ -84,10 +84,13 @@ roomUrl s = Url.Builder.absolute [ "room", s ] []
 loginUrl : String
 loginUrl = Url.Builder.absolute [ "login" ] []
 
-newUsers : Model -> List Username -> List Username
-newUsers m lus = List.filter (\u -> not <| Dict.member u m.userData) lus
-
 currentRoomId : Model -> Maybe RoomId
 currentRoomId m = case m.route of
     Room r -> Just r
     _ -> Nothing
+
+roomLocalDisplayName : Model -> RoomId -> Username -> String
+roomLocalDisplayName m rid u =
+    case Dict.get rid m.rooms of
+        Just rd -> getLocalDisplayName rd u
+        _ -> u
