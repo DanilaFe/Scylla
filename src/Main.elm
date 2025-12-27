@@ -1,3 +1,4 @@
+module Main exposing (..)
 import Browser exposing (application, UrlRequest(..))
 import Browser.Navigation as Nav
 import Browser.Dom exposing (Viewport, setViewportOf)
